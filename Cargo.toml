@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-enotation = "0.1.2"
+ariadne = "0.5.0"
+enotation = { git = "https://github.com/dannypsnl/enotation.git" }
 
 [dev-dependencies]
 insta = "1.42.0"
