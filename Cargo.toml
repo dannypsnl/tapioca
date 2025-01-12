@@ -1,3 +1,5 @@
+cargo-features = ["edition2024"]
+
 [package]
 name = "tapioca"
 version = "0.1.0"
@@ -8,6 +10,9 @@ ariadne = "0.5.0"
 enotation = { git = "https://github.com/dannypsnl/enotation.git" }
 from-pest = "0.3.3"
 pest = "2.7.15"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.135"
+serde_yaml = "0.9.34"
 
 [dev-dependencies]
 insta = { version = "1.42.0", features = ["yaml"] }

@@ -2,6 +2,9 @@ use crate::ast::*;
 use crate::error;
 use crate::matcher::{EPattern::*, ematch};
 use ariadne::{Color, Fmt, Report, ReportKind, Source};
+use enotation::ENotationBody;
+use enotation::container::Container;
+use enotation::literal::Literal;
 use enotation::{EFile, ENotation, ENotationParser, Rule};
 use from_pest::FromPest;
 use pest::Parser;
@@ -19,77 +22,157 @@ pub fn expand_module(input: &str) -> Result<Module, error::Error> {
     let mut output = ENotationParser::parse(Rule::file, input).unwrap();
     let efile = EFile::from_pest(&mut output)?;
     for notation in efile.notations {
-        expand_top_level(&mut module, notation);
+        module.expand_top_level(notation)?;
     }
 
     Ok(module)
 }
 
-fn expand_top_level(module: &mut Module, notation: ENotation) {
-    let mut binds = BTreeMap::new();
-    if ematch(
-        &mut binds,
-        &notation,
-        List(vec![Id("define"), RestHole("rest")]),
-    ) {
-        expand_defines(module, &notation);
-    } else if ematch(&mut binds, &notation, List(vec![Id(":"), RestHole("rest")])) {
-        expand_claims(module, &notation);
-    } else if ematch(
-        &mut binds,
-        &notation,
-        List(vec![Id("require"), Hole("module")]),
-    ) {
-        let m = binds.get("module").unwrap();
-        module.requires.push(Require {
-            module: format!("{}", m),
-        });
-    } else if ematch(
-        &mut binds,
-        &notation,
-        List(vec![Id("require"), RestHole("_")]),
-    ) {
+impl<'a> Module<'a> {
+    fn expand_top_level(&mut self, notation: ENotation) -> Result<(), error::Error> {
+        let mut binds = BTreeMap::new();
+        if ematch(
+            &mut binds,
+            &notation,
+            List(vec![Id("define"), RestHole("rest")]),
+        ) {
+            self.expand_defines(&notation)?;
+        } else if ematch(&mut binds, &notation, List(vec![Id(":"), RestHole("rest")])) {
+            self.expand_claims(&notation)?;
+        } else if ematch(
+            &mut binds,
+            &notation,
+            List(vec![Id("require"), Hole("module")]),
+        ) {
+            let m = binds.get("module").unwrap();
+            self.requires.push(Require {
+                module: format!("{}", m),
+            });
+        } else if ematch(
+            &mut binds,
+            &notation,
+            List(vec![Id("require"), RestHole("_")]),
+        ) {
+            let out = Color::Fixed(81);
+            Report::build(ReportKind::Error, ReportSpan::new(notation.span))
+                .with_code(3)
+                .with_message("bad require")
+                .with_note(format!("{} form must ……", "match".fg(out)))
+                .finish()
+                .eprint(self.source.clone())
+                .unwrap();
+        } else {
+            Report::build(ReportKind::Error, ReportSpan::new(notation.span))
+                .with_message("unhandled form")
+                .finish()
+                .print(self.source.clone())
+                .unwrap();
+        }
+
+        Ok(())
+    }
+
+    fn expand_claims(&mut self, notation: &ENotation) -> Result<(), error::Error> {
+        let mut binds = BTreeMap::new();
+        if ematch(
+            &mut binds,
+            &notation,
+            List(vec![Id(":"), Hole("name"), Id(":"), Hole("typ")]),
+        ) {
+            let exp = self.expand_type(binds.get("typ").unwrap())?;
+            self.claim_forms.push(ClaimForm {
+                id: binds.get("name").unwrap().to_string(),
+                typ: exp,
+            })
+        }
+
+        Ok(())
+    }
+
+    fn expand_defines(&mut self, notation: &ENotation) -> Result<(), error::Error> {
+        let mut binds = BTreeMap::new();
+        if ematch(
+            &mut binds,
+            &notation,
+            List(vec![Id("define"), Hole("name"), Hole("expr")]),
+        ) {
+            let typ = self.expand_expr(binds.get("expr").unwrap())?;
+            self.define_forms.push(DefineForm::DefineConstant {
+                id: binds.get("name").unwrap().to_string(),
+                expr: typ,
+            });
+        }
+
+        Ok(())
+    }
+
+    fn expand_type(&mut self, notation: &ENotation) -> Result<Typ, error::Error> {
+        match &notation.body {
+            ENotationBody::Literal(Literal::Identifier(id)) => match id.name.as_str() {
+                "boolean" => Ok(Typ::Bool),
+                "char" => Ok(Typ::Char),
+                "string" => Ok(Typ::String),
+                "rational" => Ok(Typ::Rational),
+                "float" => Ok(Typ::Float),
+                "int" => Ok(Typ::Int),
+                "i8" => Ok(Typ::I8),
+                "i16" => Ok(Typ::I16),
+                "i32" => Ok(Typ::I32),
+                "i64" => Ok(Typ::I64),
+                "u8" => Ok(Typ::U8),
+                "u16" => Ok(Typ::U16),
+                "u32" => Ok(Typ::U32),
+                "u64" => Ok(Typ::U64),
+                "syntax" => Ok(Typ::Syntax),
+                // unknown type
+                _ => todo!(),
+            },
+            ENotationBody::Container(Container::List(list)) => {
+                let mut ts = list.elems().into_iter();
+                let head = ts.next().unwrap();
+                if ematch(&mut BTreeMap::default(), head, Id("array")) {
+                    let t = self.expand_type(ts.next().unwrap())?;
+                    Ok(Typ::Array(t.into()))
+                } else if ematch(&mut BTreeMap::default(), head, Id("list")) {
+                    let t = self.expand_type(ts.next().unwrap())?;
+                    Ok(Typ::Array(t.into()))
+                } else if ematch(&mut BTreeMap::default(), head, Id("tuple")) {
+                    let mut xs = vec![];
+                    for t in ts {
+                        xs.push(self.expand_type(t)?);
+                    }
+                    Ok(Typ::Tuple(xs))
+                } else {
+                    todo!()
+                }
+            }
+            ENotationBody::Container(Container::Object(obj)) => {
+                todo!()
+            }
+            _ => {
+                self.bad_form(notation);
+                todo!()
+            }
+        }
+    }
+
+    fn expand_expr(&mut self, notation: &ENotation) -> Result<Expr, error::Error> {
+        match &notation.body {
+            enotation::ENotationBody::Literal(literal) => todo!(),
+            enotation::ENotationBody::Container(container) => todo!(),
+            enotation::ENotationBody::Quoting(quoting) => todo!(),
+            enotation::ENotationBody::Syntaxing(syntaxing) => todo!(),
+        }
+    }
+
+    fn bad_form(&mut self, notation: &ENotation) {
         let out = Color::Fixed(81);
-        Report::build(ReportKind::Error, ReportSpan::new(notation.span))
+        Report::build(ReportKind::Error, ReportSpan::new(notation.span.clone()))
             .with_code(3)
-            .with_message("bad require")
+            .with_message("bad form")
             .with_note(format!("{} form must ……", "match".fg(out)))
             .finish()
-            .eprint(module.source.clone())
+            .eprint(self.source.clone())
             .unwrap();
-    } else {
-        Report::build(ReportKind::Error, ReportSpan::new(notation.span))
-            .with_message("unhandled form")
-            .finish()
-            .print(module.source.clone())
-            .unwrap();
-    }
-}
-
-fn expand_claims(module: &mut Module, notation: &ENotation) {
-    let mut binds = BTreeMap::new();
-    if ematch(
-        &mut binds,
-        &notation,
-        List(vec![Id(":"), Hole("name"), Id(":"), Hole("typ")]),
-    ) {
-        module.claim_forms.push(ClaimForm {
-            id: binds.get("name").unwrap().to_string(),
-            typ: binds.get("typ").unwrap().clone(),
-        })
-    }
-}
-
-fn expand_defines(module: &mut Module, notation: &ENotation) {
-    let mut binds = BTreeMap::new();
-    if ematch(
-        &mut binds,
-        &notation,
-        List(vec![Id("define"), Hole("name"), Hole("expr")]),
-    ) {
-        module.define_forms.push(DefineForm::DefineConstant {
-            id: binds.get("name").unwrap().to_string(),
-            expr: binds.get("expr").unwrap().clone(),
-        });
     }
 }

@@ -1,5 +1,5 @@
 use ariadne::Source;
-use enotation::ENotation;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 pub struct Module<'a> {
@@ -7,32 +7,32 @@ pub struct Module<'a> {
     pub requires: Vec<Require>,
     pub claim_forms: Vec<ClaimForm>,
     pub define_forms: Vec<DefineForm>,
-    pub other_forms: Vec<ENotation>,
+    pub other_forms: Vec<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Require {
     pub module: String,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ClaimForm {
     // (: x : int)
     // claims `x` has type `int`
     pub id: String,
     // TODO: normalize this to internal AST
-    pub typ: ENotation,
+    pub typ: Typ,
 }
 
 // NOTE: (define x : <type> <expr>) will be elaborated to
 // (: x : <type>)
 // (define x <expr>)
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum DefineForm {
     // (define x <expr>)
     DefineConstant {
         id: String,
-        expr: ENotation,
+        expr: Expr,
     },
     // (define (f x y z ...)
     //   <body_1>
@@ -41,8 +41,33 @@ pub enum DefineForm {
     DefineFunction {
         id: String,
         params: Vec<String>,
-        body: Vec<ENotation>,
+        body: Vec<Expr>,
     },
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Expr {}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Typ {
+    Bool,
+    Char,
+    String,
+    Rational,
+    Float,
+    Int,
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    Syntax,
+    Array(Box<Typ>),
+    List(Box<Typ>),
+    Tuple(Vec<Typ>),
 }
 
 pub struct ReportSpan {
