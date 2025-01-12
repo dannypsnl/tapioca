@@ -37,9 +37,7 @@ pub enum DefineForm {
     },
 }
 
-struct ParseError {}
-
-fn expand_module(notations: Vec<ENotation>) -> Result<Module, ParseError> {
+fn expand_module(notations: Vec<ENotation>) -> Result<Module, Error> {
     let mut module = Module {
         claim_forms: vec![],
         define_forms: vec![],
@@ -84,7 +82,7 @@ fn main() -> Result<(), Error> {
     let input = fs::read_to_string("example/hello.ss")?;
     let mut output = ENotationParser::parse(Rule::file, input.as_str()).unwrap();
     let efile = EFile::from_pest(&mut output)?;
-    expand_module(efile.notations);
+    let module = expand_module(efile.notations)?;
     println!("Hello, world!");
     Ok(())
 }
