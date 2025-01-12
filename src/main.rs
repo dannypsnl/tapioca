@@ -1,4 +1,7 @@
-use enotation::{ENotation, ENotationBody};
+use enotation::{EFile, ENotation, ENotationBody, ENotationParser, Rule};
+use from_pest::{ConversionError, FromPest, Void};
+use pest::Parser;
+use std::fs;
 
 pub struct Module {
     claim_forms: Vec<ClaimForm>,
@@ -52,40 +55,16 @@ fn expand_module(notations: Vec<ENotation>) -> Result<Module, ParseError> {
 
 fn expand_top_level(module: &mut Module, notation: ENotation) {
     match &notation.body {
-        ENotationBody::List(vec) => {
-            if vec.len() != 0 {
-                match &vec[0].body {
-                    ENotationBody::Identifier(id) => match id.as_str() {
-                        "require" => expand_requires(module, vec),
-                        ":" => expand_claims(module, vec),
-                        "define" => expand_defines(module, vec),
-                        _ => todo!(),
-                    },
-                    _ => todo!(),
-                }
-            } else {
-                // TODO: report an empty application
-            }
-        }
-        // rest are all been treated as script part
-        ENotationBody::Boolean(_) => todo!(),
-        ENotationBody::Integer(_) => todo!(),
-        ENotationBody::Rational(_, _) => todo!(),
-        ENotationBody::Float(_) => todo!(),
-        ENotationBody::Char(_) => todo!(),
-        ENotationBody::Str(_) => todo!(),
-        ENotationBody::Identifier(_) => todo!(),
-        ENotationBody::Set(vec) => todo!(),
-        ENotationBody::UnamedObject(vec) => todo!(),
-        ENotationBody::Object(vec) => todo!(),
-        ENotationBody::Quote(enotation) => todo!(),
-        ENotationBody::QuasiQuote(enotation) => todo!(),
-        ENotationBody::Unquote(enotation) => todo!(),
-        ENotationBody::UnquoteSplicing(enotation) => todo!(),
-        ENotationBody::Syntax(enotation) => todo!(),
-        ENotationBody::QuasiSyntax(enotation) => todo!(),
-        ENotationBody::Unsyntax(enotation) => todo!(),
-        ENotationBody::UnsyntaxSplicing(enotation) => todo!(),
+        ENotationBody::Container(container) => match container {
+            enotation::container::Container::List(list) => todo!(),
+
+            enotation::container::Container::Set(set) => todo!(),
+            enotation::container::Container::UnamedObject(unamed_object) => todo!(),
+            enotation::container::Container::Object(object) => todo!(),
+        },
+        ENotationBody::Literal(literal) => todo!(),
+        ENotationBody::Quoting(quoting) => todo!(),
+        ENotationBody::Syntaxing(syntaxing) => todo!(),
     }
 }
 
@@ -101,6 +80,27 @@ fn expand_defines(module: &mut Module, vec: &Vec<ENotation>) {
     todo!()
 }
 
-fn main() {
+fn main() -> Result<(), Error> {
+    let input = fs::read_to_string("example/hello.ss")?;
+    let mut output = ENotationParser::parse(Rule::file, input.as_str()).unwrap();
+    let efile = EFile::from_pest(&mut output)?;
+    expand_module(efile.notations);
     println!("Hello, world!");
+    Ok(())
+}
+
+#[derive(Debug)]
+enum Error {
+    IO(std::io::Error),
+    Parser(ConversionError<Void>),
+}
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Error {
+        Error::IO(err)
+    }
+}
+impl From<ConversionError<Void>> for Error {
+    fn from(err: ConversionError<Void>) -> Error {
+        Error::Parser(err)
+    }
 }
