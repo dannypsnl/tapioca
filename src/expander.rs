@@ -5,6 +5,7 @@ use ariadne::{Color, Fmt, Report, ReportKind, Source};
 use enotation::ENotationBody;
 use enotation::container::Container;
 use enotation::literal::Literal;
+use enotation::quoting;
 use enotation::{EFile, ENotation, ENotationParser, Rule};
 use from_pest::FromPest;
 use pest::Parser;
@@ -112,6 +113,7 @@ impl<'a> Module<'a> {
                 "boolean" => Ok(Typ::Bool),
                 "char" => Ok(Typ::Char),
                 "string" => Ok(Typ::String),
+                "symbol" => Ok(Typ::Symbol),
                 "rational" => Ok(Typ::Rational),
                 "float" => Ok(Typ::Float),
                 "int" => Ok(Typ::Int),

@@ -55,6 +55,9 @@ pub enum Expr {
     Int(i64),
 
     Identifier(String),
+    Symbol(String),
+
+    App(Box<Expr>, Vec<Expr>),
 
     List(Vec<Expr>),
     Tuple(Vec<Expr>),
@@ -68,6 +71,7 @@ pub enum Typ {
     Bool,
     Char,
     String,
+    Symbol,
     Rational,
     Float,
     Int,
