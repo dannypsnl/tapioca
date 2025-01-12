@@ -3,6 +3,8 @@ use from_pest::{ConversionError, FromPest, Void};
 use pest::Parser;
 use std::fs;
 
+mod matcher;
+
 pub struct Module {
     claim_forms: Vec<ClaimForm>,
     define_forms: Vec<DefineForm>,
@@ -54,7 +56,9 @@ fn expand_module(notations: Vec<ENotation>) -> Result<Module, Error> {
 fn expand_top_level(module: &mut Module, notation: ENotation) {
     match &notation.body {
         ENotationBody::Container(container) => match container {
-            enotation::container::Container::List(list) => todo!(),
+            enotation::container::Container::List(list) => {
+                let e = list.elems();
+            }
 
             enotation::container::Container::Set(set) => todo!(),
             enotation::container::Container::UnamedObject(unamed_object) => todo!(),
