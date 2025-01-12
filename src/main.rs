@@ -1,4 +1,4 @@
-use ariadne::{Report, ReportKind, Source};
+use ariadne::{Color, Fmt, Report, ReportKind, Source};
 use enotation::{DiagnosticSpan, EFile, ENotation, ENotationParser, Rule};
 use from_pest::{ConversionError, FromPest, Void};
 use pest::Parser;
@@ -93,8 +93,17 @@ fn expand_top_level(module: &mut Module, notation: ENotation) {
         &notation,
         List(vec![Id("require"), RestHole("_")]),
     ) {
+        let out = Color::Fixed(81);
         Report::build(ReportKind::Error, ReportSpan::new(notation.span))
-            .with_message("")
+            .with_code(3)
+            .with_message("bad require")
+            .with_note(format!("{} form must ……", "match".fg(out)))
+            .finish()
+            .eprint(module.source.clone())
+            .unwrap();
+    } else {
+        Report::build(ReportKind::Error, ReportSpan::new(notation.span))
+            .with_message("unhandled form")
             .finish()
             .print(module.source.clone())
             .unwrap();
@@ -112,7 +121,7 @@ fn expand_defines(module: &mut Module, notation: &ENotation) {
 fn main() -> Result<(), Error> {
     let input = fs::read_to_string("example/hello.ss")?;
     let module = expand_module(input.as_str())?;
-    println!("{:?}", module);
+    println!("\ndebug\n{:?}", module);
     Ok(())
 }
 
@@ -141,6 +150,14 @@ impl ReportSpan {
 enum Error {
     IO(std::io::Error),
     Parser(ConversionError<Void>),
+}
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::IO(err) => write!(f, "IO error: {}", err),
+            Error::Parser(err) => write!(f, "Parser error: {:?}", err),
+        }
+    }
 }
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {

@@ -1,1 +1,3 @@
-(require a b c)
+(require a)
+(require b)
+(require c)
