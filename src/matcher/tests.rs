@@ -64,3 +64,15 @@ fn match_define_form_2() {
     type = i32
     ");
 }
+
+#[test]
+fn match_define_form_3() {
+    let mut binds = BTreeMap::new();
+    let res = ematch(
+        &mut binds,
+        notation("(define x : i32 1)"),
+        List(vec![Id("define"), RestHole("rest")]),
+    );
+    assert_eq!(res, true);
+    assert_snapshot!(Into::<DisplayVecENotation>::into(binds), @"rest = (x : i32 1)");
+}

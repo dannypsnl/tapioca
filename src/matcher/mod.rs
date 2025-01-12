@@ -1,4 +1,4 @@
-use enotation::{ENotation, container::*, literal::Literal};
+use enotation::{ENotation, ENotationBody, container::*, literal::Literal};
 use std::collections::BTreeMap;
 
 pub enum EPattern<'a> {
@@ -7,6 +7,8 @@ pub enum EPattern<'a> {
     Id(&'a str),
     /// The name of a hole will bind to an `ENotaion` as the result of `ematch`
     Hole(&'a str),
+    /// The rest hole will match the rest of many notations
+    RestHole(&'a str),
 }
 
 use EPattern::*;
@@ -36,11 +38,32 @@ fn ematch_container(
 ) -> bool {
     match (container, pattern) {
         (Container::List(list), EPattern::List(patterns)) => {
-            for (notation, pat) in list.elems().iter().zip(patterns) {
-                if !ematch(binds, notation.clone(), pat) {
-                    return false;
+            let mut notations = list.elems().into_iter();
+            for pat in patterns {
+                match pat {
+                    RestHole(name) => {
+                        let rest = notations.map(|n| n.clone()).collect::<Vec<ENotation>>();
+                        let v = ENotation {
+                            body: ENotationBody::Container(Container::List(list::List::PL(
+                                list::PList { elems: rest },
+                            ))),
+                            span: Default::default(), // or any valid span value
+                        };
+                        binds.insert(name.to_string(), v);
+                        return true;
+                    }
+                    pat => {
+                        if let Some(notation) = notations.next() {
+                            if !ematch(binds, notation.clone(), pat) {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
                 }
             }
+
             true
         }
         (Container::Set(set), _) => todo!(),
