@@ -46,7 +46,22 @@ pub enum DefineForm {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum Expr {}
+pub enum Expr {
+    Bool(bool),
+    Char(char),
+    String(String),
+    Rational(i64, i64),
+    Float(f64),
+    Int(i64),
+
+    Identifier(String),
+
+    List(Vec<Expr>),
+    Tuple(Vec<Expr>),
+    Object(Vec<(String, Expr)>),
+
+    Syntax(Box<Expr>),
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Typ {

@@ -158,7 +158,17 @@ impl<'a> Module<'a> {
 
     fn expand_expr(&mut self, notation: &ENotation) -> Result<Expr, error::Error> {
         match &notation.body {
-            enotation::ENotationBody::Literal(literal) => todo!(),
+            enotation::ENotationBody::Literal(literal) => match literal {
+                Literal::Boolean(boolean) => Ok(Expr::Bool(boolean.value)),
+                Literal::Char(c) => Ok(Expr::Char(c.value)),
+                Literal::Float(float) => Ok(Expr::Float(float.value)),
+                Literal::Rational(rational) => {
+                    Ok(Expr::Rational(rational.value.0, rational.value.1))
+                }
+                Literal::Int(integer) => Ok(Expr::Int(integer.value)),
+                Literal::String_(string) => Ok(Expr::String(string.value.clone())),
+                Literal::Identifier(identifier) => Ok(Expr::Identifier(identifier.name.clone())),
+            },
             enotation::ENotationBody::Container(container) => todo!(),
             enotation::ENotationBody::Quoting(quoting) => todo!(),
             enotation::ENotationBody::Syntaxing(syntaxing) => todo!(),
