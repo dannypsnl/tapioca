@@ -1,4 +1,5 @@
 use ariadne::Source;
+use enotation::ENotation;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -7,7 +8,7 @@ pub struct Module<'a> {
     pub requires: Vec<Require>,
     pub claim_forms: Vec<ClaimForm>,
     pub define_forms: Vec<DefineForm>,
-    pub other_forms: Vec<Expr>,
+    pub other_forms: Vec<ENotation>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -87,6 +88,7 @@ pub enum Typ {
     Array(Box<Typ>),
     List(Box<Typ>),
     Tuple(Vec<Typ>),
+    Record(Vec<(String, Typ)>),
 }
 
 pub struct ReportSpan {

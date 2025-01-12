@@ -5,7 +5,6 @@ use ariadne::{Color, Fmt, Report, ReportKind, Source};
 use enotation::ENotationBody;
 use enotation::container::Container;
 use enotation::literal::Literal;
-use enotation::quoting;
 use enotation::{EFile, ENotation, ENotationParser, Rule};
 use from_pest::FromPest;
 use pest::Parser;
@@ -63,11 +62,7 @@ impl<'a> Module<'a> {
                 .eprint(self.source.clone())
                 .unwrap();
         } else {
-            Report::build(ReportKind::Error, ReportSpan::new(notation.span))
-                .with_message("unhandled form")
-                .finish()
-                .print(self.source.clone())
-                .unwrap();
+            self.other_forms.push(notation);
         }
 
         Ok(())
@@ -149,7 +144,11 @@ impl<'a> Module<'a> {
                 }
             }
             ENotationBody::Container(Container::Object(obj)) => {
-                todo!()
+                let mut fields = vec![];
+                for pair in &obj.pairs {
+                    fields.push((pair.key.name.clone(), self.expand_type(&pair.value)?))
+                }
+                Ok(Typ::Record(fields))
             }
             _ => {
                 self.bad_form(notation);
@@ -171,9 +170,7 @@ impl<'a> Module<'a> {
                 Literal::String_(string) => Ok(Expr::String(string.value.clone())),
                 Literal::Identifier(identifier) => Ok(Expr::Identifier(identifier.name.clone())),
             },
-            enotation::ENotationBody::Container(container) => todo!(),
-            enotation::ENotationBody::Quoting(quoting) => todo!(),
-            enotation::ENotationBody::Syntaxing(syntaxing) => todo!(),
+            _ => todo!(),
         }
     }
 

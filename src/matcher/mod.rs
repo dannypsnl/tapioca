@@ -29,8 +29,7 @@ pub fn ematch(
         (enotation::ENotationBody::Literal(literal), pattern) => {
             ematch_literal(binds, literal, pattern)
         }
-        (enotation::ENotationBody::Quoting(quoting), pattern) => todo!(),
-        (enotation::ENotationBody::Syntaxing(syntaxing), pattern) => todo!(),
+        _ => todo!(),
     }
 }
 
@@ -74,9 +73,6 @@ fn ematch_container(
 
             true
         }
-        (Container::Set(set), _) => todo!(),
-        (Container::UnamedObject(unamed_object), _) => todo!(),
-        (Container::Object(object), _) => todo!(),
         _ => false,
     }
 }
