@@ -1,16 +1,28 @@
-use enotation::{EFile, ENotation, ENotationBody, ENotationParser, Rule};
+use ariadne::{Report, ReportKind, Source};
+use enotation::{DiagnosticSpan, EFile, ENotation, ENotationParser, Rule};
 use from_pest::{ConversionError, FromPest, Void};
 use pest::Parser;
-use std::fs;
+use std::{collections::BTreeMap, fs};
 
 mod matcher;
 
-pub struct Module {
+use matcher::{EPattern, ematch};
+
+#[derive(Debug)]
+pub struct Module<'a> {
+    source: Source<&'a str>,
+    requires: Vec<Require>,
     claim_forms: Vec<ClaimForm>,
     define_forms: Vec<DefineForm>,
     other_forms: Vec<ENotation>,
 }
 
+#[derive(Debug)]
+pub struct Require {
+    module: String,
+}
+
+#[derive(Debug)]
 pub struct ClaimForm {
     // (: x : int)
     // claims `x` has type `int`
@@ -22,6 +34,7 @@ pub struct ClaimForm {
 // NOTE: (define x : <type> <expr>) will be elaborated to
 // (: x : <type>)
 // (define x <expr>)
+#[derive(Debug)]
 pub enum DefineForm {
     // (define x <expr>)
     DefineConstant {
@@ -39,14 +52,18 @@ pub enum DefineForm {
     },
 }
 
-fn expand_module(notations: Vec<ENotation>) -> Result<Module, Error> {
+fn expand_module(input: &str) -> Result<Module, Error> {
     let mut module = Module {
+        source: Source::from(input),
         claim_forms: vec![],
         define_forms: vec![],
         other_forms: vec![],
+        requires: vec![],
     };
 
-    for notation in notations {
+    let mut output = ENotationParser::parse(Rule::file, input).unwrap();
+    let efile = EFile::from_pest(&mut output)?;
+    for notation in efile.notations {
         expand_top_level(&mut module, notation);
     }
 
@@ -54,41 +71,70 @@ fn expand_module(notations: Vec<ENotation>) -> Result<Module, Error> {
 }
 
 fn expand_top_level(module: &mut Module, notation: ENotation) {
-    match &notation.body {
-        ENotationBody::Container(container) => match container {
-            enotation::container::Container::List(list) => {
-                let e = list.elems();
-            }
-
-            enotation::container::Container::Set(set) => todo!(),
-            enotation::container::Container::UnamedObject(unamed_object) => todo!(),
-            enotation::container::Container::Object(object) => todo!(),
-        },
-        ENotationBody::Literal(literal) => todo!(),
-        ENotationBody::Quoting(quoting) => todo!(),
-        ENotationBody::Syntaxing(syntaxing) => todo!(),
+    use EPattern::*;
+    let mut binds = BTreeMap::new();
+    if ematch(
+        &mut binds,
+        &notation,
+        List(vec![Id("define"), RestHole("rest")]),
+    ) {
+        expand_defines(module, &notation);
+    } else if ematch(
+        &mut binds,
+        &notation,
+        List(vec![Id("require"), Hole("module")]),
+    ) {
+        let m = binds.get("module").unwrap();
+        module.requires.push(Require {
+            module: format!("{}", m),
+        });
+    } else if ematch(
+        &mut binds,
+        &notation,
+        List(vec![Id("require"), RestHole("_")]),
+    ) {
+        Report::build(ReportKind::Error, ReportSpan::new(notation.span))
+            .with_message("")
+            .finish()
+            .print(module.source.clone())
+            .unwrap();
     }
 }
 
-fn expand_requires(module: &mut Module, vec: &Vec<ENotation>) {
+fn expand_claims(module: &mut Module, notation: &ENotation) {
     todo!()
 }
 
-fn expand_claims(module: &mut Module, vec: &Vec<ENotation>) {
-    todo!()
-}
-
-fn expand_defines(module: &mut Module, vec: &Vec<ENotation>) {
+fn expand_defines(module: &mut Module, notation: &ENotation) {
     todo!()
 }
 
 fn main() -> Result<(), Error> {
     let input = fs::read_to_string("example/hello.ss")?;
-    let mut output = ENotationParser::parse(Rule::file, input.as_str()).unwrap();
-    let efile = EFile::from_pest(&mut output)?;
-    let module = expand_module(efile.notations)?;
-    println!("Hello, world!");
+    let module = expand_module(input.as_str())?;
+    println!("{:?}", module);
     Ok(())
+}
+
+struct ReportSpan {
+    diagspan: DiagnosticSpan,
+}
+impl ariadne::Span for ReportSpan {
+    type SourceId = ();
+    fn source(&self) -> &Self::SourceId {
+        &()
+    }
+    fn start(&self) -> usize {
+        self.diagspan.start_offset
+    }
+    fn end(&self) -> usize {
+        self.diagspan.end_offset
+    }
+}
+impl ReportSpan {
+    fn new(diagspan: DiagnosticSpan) -> Self {
+        ReportSpan { diagspan }
+    }
 }
 
 #[derive(Debug)]

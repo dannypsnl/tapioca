@@ -13,11 +13,14 @@ pub enum EPattern<'a> {
 
 use EPattern::*;
 
-fn ematch(binds: &mut BTreeMap<String, ENotation>, notation: ENotation, pattern: EPattern) -> bool {
-    let no = notation.clone();
-    match (notation.body, pattern) {
+pub fn ematch(
+    binds: &mut BTreeMap<String, ENotation>,
+    notation: &ENotation,
+    pattern: EPattern,
+) -> bool {
+    match (&notation.body, pattern) {
         (_, Hole(name)) => {
-            binds.insert(name.to_string(), no);
+            binds.insert(name.to_string(), notation.clone());
             true
         }
         (enotation::ENotationBody::Container(container), pattern) => {
@@ -33,12 +36,13 @@ fn ematch(binds: &mut BTreeMap<String, ENotation>, notation: ENotation, pattern:
 
 fn ematch_container(
     binds: &mut BTreeMap<String, ENotation>,
-    container: Container,
+    container: &Container,
     pattern: EPattern,
 ) -> bool {
     match (container, pattern) {
         (Container::List(list), EPattern::List(patterns)) => {
-            let mut notations = list.elems().into_iter();
+            let mut notations = list.elems().into_iter().peekable();
+
             for pat in patterns {
                 match pat {
                     RestHole(name) => {
@@ -54,7 +58,7 @@ fn ematch_container(
                     }
                     pat => {
                         if let Some(notation) = notations.next() {
-                            if !ematch(binds, notation.clone(), pat) {
+                            if !ematch(binds, notation, pat) {
                                 return false;
                             }
                         } else {
@@ -62,6 +66,10 @@ fn ematch_container(
                         }
                     }
                 }
+            }
+
+            if notations.peek().is_some() {
+                return false;
             }
 
             true
@@ -74,8 +82,8 @@ fn ematch_container(
 }
 
 fn ematch_literal(
-    binds: &mut BTreeMap<String, ENotation>,
-    literal: Literal,
+    _binds: &mut BTreeMap<String, ENotation>,
+    literal: &Literal,
     pattern: EPattern,
 ) -> bool {
     match (literal, pattern) {

@@ -33,7 +33,7 @@ fn match_define_form() {
     let mut binds = BTreeMap::new();
     let res = ematch(
         &mut binds,
-        notation("(define x 1)"),
+        &notation("(define x 1)"),
         List(vec![Id("define"), Hole("name"), Hole("expr")]),
     );
     assert_eq!(res, true);
@@ -48,7 +48,7 @@ fn match_define_form_2() {
     let mut binds = BTreeMap::new();
     let res = ematch(
         &mut binds,
-        notation("(define x : i32 1)"),
+        &notation("(define x : i32 1)"),
         List(vec![
             Id("define"),
             Hole("name"),
@@ -70,7 +70,7 @@ fn match_define_form_3() {
     let mut binds = BTreeMap::new();
     let res = ematch(
         &mut binds,
-        notation("(define x : i32 1)"),
+        &notation("(define x : i32 1)"),
         List(vec![Id("define"), RestHole("rest")]),
     );
     assert_eq!(res, true);
