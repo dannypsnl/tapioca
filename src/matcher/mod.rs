@@ -1,5 +1,5 @@
 use enotation::{ENotation, container::*, literal::Literal};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub enum EPattern<'a> {
     List(Vec<EPattern<'a>>),
@@ -11,7 +11,7 @@ pub enum EPattern<'a> {
 
 use EPattern::*;
 
-fn ematch(binds: &mut HashMap<String, ENotation>, notation: ENotation, pattern: EPattern) -> bool {
+fn ematch(binds: &mut BTreeMap<String, ENotation>, notation: ENotation, pattern: EPattern) -> bool {
     let no = notation.clone();
     match (notation.body, pattern) {
         (_, Hole(name)) => {
@@ -30,7 +30,7 @@ fn ematch(binds: &mut HashMap<String, ENotation>, notation: ENotation, pattern: 
 }
 
 fn ematch_container(
-    binds: &mut HashMap<String, ENotation>,
+    binds: &mut BTreeMap<String, ENotation>,
     container: Container,
     pattern: EPattern,
 ) -> bool {
@@ -51,7 +51,7 @@ fn ematch_container(
 }
 
 fn ematch_literal(
-    binds: &mut HashMap<String, ENotation>,
+    binds: &mut BTreeMap<String, ENotation>,
     literal: Literal,
     pattern: EPattern,
 ) -> bool {
