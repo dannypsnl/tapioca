@@ -145,12 +145,16 @@ impl Display for Typ {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReportSpan {
-    diagspan: enotation::DiagnosticSpan,
+    start_offset: usize,
+    end_offset: usize,
 }
 
 impl From<enotation::DiagnosticSpan> for ReportSpan {
-    fn from(diagspan: enotation::DiagnosticSpan) -> Self {
-        ReportSpan { diagspan }
+    fn from(dspan: enotation::DiagnosticSpan) -> Self {
+        ReportSpan {
+            start_offset: dspan.start_offset,
+            end_offset: dspan.end_offset,
+        }
     }
 }
 
@@ -160,9 +164,9 @@ impl ariadne::Span for ReportSpan {
         &()
     }
     fn start(&self) -> usize {
-        self.diagspan.start_offset
+        self.start_offset
     }
     fn end(&self) -> usize {
-        self.diagspan.end_offset
+        self.end_offset
     }
 }
