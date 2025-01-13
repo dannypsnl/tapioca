@@ -1,15 +1,30 @@
-use ariadne::Source;
+use ariadne::{Cache, Source};
 use enotation::ENotation;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[derive(Debug, Clone)]
-pub struct Module<'a> {
-    pub source: Source<&'a str>,
+pub struct Module {
+    pub source: (String, Source<String>),
     pub requires: Vec<Require>,
     pub claim_forms: Vec<ClaimForm>,
     pub define_forms: Vec<DefineForm>,
     pub other_forms: Vec<ENotation>,
+}
+
+impl Cache<String> for Module {
+    type Storage = String;
+
+    fn fetch(
+        &mut self,
+        id: &String,
+    ) -> Result<&Source<Self::Storage>, Box<dyn std::fmt::Debug + '_>> {
+        self.source.fetch(id)
+    }
+
+    fn display<'a>(&self, id: &'a String) -> Option<Box<dyn std::fmt::Display + 'a>> {
+        self.source.display(id)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -145,6 +160,7 @@ impl Display for Typ {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReportSpan {
+    source: String,
     start_offset: usize,
     end_offset: usize,
 }
@@ -152,6 +168,7 @@ pub struct ReportSpan {
 impl From<enotation::DiagnosticSpan> for ReportSpan {
     fn from(dspan: enotation::DiagnosticSpan) -> Self {
         ReportSpan {
+            source: dspan.file.unwrap(),
             start_offset: dspan.start_offset,
             end_offset: dspan.end_offset,
         }
@@ -159,9 +176,9 @@ impl From<enotation::DiagnosticSpan> for ReportSpan {
 }
 
 impl ariadne::Span for ReportSpan {
-    type SourceId = ();
+    type SourceId = String;
     fn source(&self) -> &Self::SourceId {
-        &()
+        &self.source
     }
     fn start(&self) -> usize {
         self.start_offset

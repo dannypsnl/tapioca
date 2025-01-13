@@ -3,32 +3,39 @@ use crate::error;
 use crate::matcher::{EPattern::*, ematch};
 use ariadne::{Color, Fmt, Report, ReportKind, Source};
 use enotation::ENotationBody;
+use enotation::SetDebugFileName;
 use enotation::container::Container;
 use enotation::literal::Literal;
 use enotation::{EFile, ENotation, ENotationParser, Rule};
 use from_pest::FromPest;
 use pest::Parser;
 use std::collections::BTreeMap;
+use std::path::Path;
 
-pub fn expand_module(input: &str) -> Result<Module, error::Error> {
+pub fn expand_module(filename: &str) -> Result<Module, error::Error> {
+    let path: &Path = Path::new(filename);
+    let input = std::fs::read_to_string(path).expect("failed to open file");
+
+    let mut output = ENotationParser::parse(Rule::file, input.as_str()).unwrap();
+    let efile = EFile::from_pest(&mut output)?;
+
     let mut module = Module {
-        source: Source::from(input),
+        source: (filename.to_string(), Source::from(input)),
         claim_forms: vec![],
         define_forms: vec![],
         other_forms: vec![],
         requires: vec![],
     };
 
-    let mut output = ENotationParser::parse(Rule::file, input).unwrap();
-    let efile = EFile::from_pest(&mut output)?;
-    for notation in efile.notations {
+    for mut notation in efile.notations {
+        notation.set_debug_file_name(filename);
         module.expand_top_level(notation)?;
     }
 
     Ok(module)
 }
 
-impl<'a> Module<'a> {
+impl Module {
     fn expand_top_level(&mut self, notation: ENotation) -> Result<(), error::Error> {
         let mut binds = BTreeMap::new();
         if ematch(
@@ -60,7 +67,7 @@ impl<'a> Module<'a> {
                 .with_message("bad require")
                 .with_note(format!("{} form must ……", "match".fg(out)))
                 .finish()
-                .eprint(self.source.clone())
+                .eprint(self.clone())
                 .unwrap();
         } else {
             self.other_forms.push(notation);
@@ -184,7 +191,7 @@ impl<'a> Module<'a> {
             .with_message("bad form")
             .with_note(format!("{} form must ……", "match".fg(out)))
             .finish()
-            .eprint(self.source.clone())
+            .eprint(self.clone())
             .unwrap();
     }
 }

@@ -4,7 +4,7 @@ use ariadne::{Report, ReportKind};
 mod environment;
 
 pub fn check(module: &Module) {
-    let mut env = environment::Environment::new(&module.source);
+    let mut env = environment::Environment::new(&module);
     for claim in &module.claim_forms {
         env.insert(claim.id.clone(), claim.typ.clone());
     }
@@ -45,7 +45,7 @@ pub fn check(module: &Module) {
                                 ty
                             ))
                             .finish()
-                            .eprint(module.source.clone())
+                            .eprint(module.clone())
                             .unwrap();
                     }
                 }

@@ -1,10 +1,9 @@
-use ariadne::{Label, Report, ReportKind, Source};
-
-use crate::ast::{Expr, ReportSpan, Typ};
+use crate::ast::{Expr, Module, ReportSpan, Typ};
+use ariadne::{Label, Report, ReportKind};
 use std::collections::BTreeMap;
 
 pub struct Environment<'a> {
-    source: &'a Source<&'a str>,
+    source: &'a Module,
     current_scope: BTreeMap<String, Typ>,
     parent: Option<&'a Environment<'a>>,
 }
@@ -101,7 +100,7 @@ impl<'a> Environment<'a> {
         }
     }
 
-    pub fn new(source: &'a Source<&'a str>) -> Self {
+    pub fn new(source: &'a Module) -> Self {
         Self {
             source,
             current_scope: BTreeMap::new(),
