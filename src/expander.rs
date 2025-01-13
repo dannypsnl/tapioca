@@ -3,16 +3,16 @@ use crate::ast::{
     typ::{Typ, TypBody},
     *,
 };
-use crate::error;
-use crate::matcher::{EPattern::*, ematch};
-use ariadne::{Color, Fmt, Report, ReportKind, Source};
+use crate::matcher::{EPattern::*, MatchedResult, ematch};
+use crate::{error, matcher};
+use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 use enotation::{
     EFile, ENotation, ENotationBody, ENotationParser, Rule, SetDebugFileName, container::Container,
     literal::Literal,
 };
 use from_pest::FromPest;
 use pest::Parser;
-use std::{collections::BTreeMap, path::Path};
+use std::path::Path;
 
 pub fn expand_module(filename: &str) -> Result<Module, error::Error> {
     let path: &Path = Path::new(filename);
@@ -39,7 +39,7 @@ pub fn expand_module(filename: &str) -> Result<Module, error::Error> {
 
 impl Module {
     fn expand_top_level(&mut self, notation: ENotation) -> Result<(), error::Error> {
-        let mut binds = BTreeMap::new();
+        let mut binds = MatchedResult::default();
         if ematch(
             &mut binds,
             &notation,
@@ -51,26 +51,25 @@ impl Module {
         } else if ematch(
             &mut binds,
             &notation,
-            List(vec![Id("require"), Hole("module")]),
+            List(vec![Id("require"), RestHole("module")]),
         ) {
-            let m = binds.get("module").unwrap();
-            self.requires.push(Require {
-                module: format!("{}", m),
-            });
-        } else if ematch(
-            &mut binds,
-            &notation,
-            List(vec![Id("require"), RestHole("_")]),
-        ) {
-            let out = Color::Fixed(81);
-            let span: ReportSpan = notation.span.clone().into();
-            Report::build(ReportKind::Error, span)
-                .with_code(3)
-                .with_message("bad require")
-                .with_note(format!("{} form must ……", "match".fg(out)))
-                .finish()
-                .eprint(self.clone())
-                .unwrap();
+            let requires = binds.get_many("module");
+            for r in requires {
+                if matcher::is_identifier(r) {
+                    self.requires.push(Require {
+                        module: format!("{}", r),
+                    });
+                } else {
+                    let span: ReportSpan = r.span.clone().into();
+                    Report::build(ReportKind::Error, span.clone())
+                        .with_code(3)
+                        .with_message("bad require")
+                        .with_label(Label::new(span.clone()).with_message("Not an identifier"))
+                        .finish()
+                        .eprint(self.clone())
+                        .unwrap();
+                }
+            }
         } else {
             self.other_forms.push(notation);
         }
@@ -79,15 +78,15 @@ impl Module {
     }
 
     fn expand_claims(&mut self, notation: &ENotation) -> Result<(), error::Error> {
-        let mut binds = BTreeMap::new();
+        let mut binds = MatchedResult::default();
         if ematch(
             &mut binds,
             &notation,
             List(vec![Id(":"), Hole("name"), Id(":"), Hole("typ")]),
         ) {
-            let exp = self.expand_type(binds.get("typ").unwrap())?;
+            let exp = self.expand_type(binds.get_one("typ"))?;
             self.claim_forms.push(ClaimForm {
-                id: binds.get("name").unwrap().to_string(),
+                id: binds.get_one("name").to_string(),
                 typ: exp,
             })
         }
@@ -96,16 +95,16 @@ impl Module {
     }
 
     fn expand_defines(&mut self, notation: &ENotation) -> Result<(), error::Error> {
-        let mut binds = BTreeMap::new();
+        let mut binds = MatchedResult::default();
         if ematch(
             &mut binds,
             &notation,
             List(vec![Id("define"), Hole("name"), Hole("expr")]),
         ) {
-            let typ = self.expand_expr(binds.get("expr").unwrap())?;
+            let typ = self.expand_expr(binds.get_one("expr"))?;
             self.define_forms.push(DefineForm::DefineConstant {
                 span: notation.span.clone().into(),
-                id: binds.get("name").unwrap().to_string(),
+                id: binds.get_one("name").to_string(),
                 expr: typ,
             });
         }
@@ -139,13 +138,13 @@ impl Module {
             ENotationBody::Container(Container::List(list)) => {
                 let mut ts = list.elems().into_iter();
                 let head = ts.next().unwrap();
-                if ematch(&mut BTreeMap::default(), head, Id("array")) {
+                if ematch(&mut MatchedResult::default(), head, Id("array")) {
                     let t = self.expand_type(ts.next().unwrap())?;
                     Ok(TypBody::Array(t.into()).with_span(span))
-                } else if ematch(&mut BTreeMap::default(), head, Id("list")) {
+                } else if ematch(&mut MatchedResult::default(), head, Id("list")) {
                     let t = self.expand_type(ts.next().unwrap())?;
                     Ok(TypBody::Array(t.into()).with_span(span))
-                } else if ematch(&mut BTreeMap::default(), head, Id("tuple")) {
+                } else if ematch(&mut MatchedResult::default(), head, Id("tuple")) {
                     let mut xs = vec![];
                     for t in ts {
                         xs.push(self.expand_type(t)?);

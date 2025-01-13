@@ -1,6 +1,6 @@
 (require a)
 (require b)
-(require c)
+(require c d e 1)
 
 (: x : i32)
 (define x 1)

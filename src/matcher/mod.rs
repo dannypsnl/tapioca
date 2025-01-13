@@ -10,17 +10,74 @@ pub enum EPattern<'a> {
     /// The rest hole will match the rest of many notations
     RestHole(&'a str),
 }
-
 use EPattern::*;
 
-pub fn ematch(
-    binds: &mut BTreeMap<String, ENotation>,
-    notation: &ENotation,
-    pattern: EPattern,
-) -> bool {
+pub enum Matched {
+    One(ENotation),
+    Many(Vec<ENotation>),
+}
+
+impl From<ENotation> for Matched {
+    fn from(value: ENotation) -> Self {
+        Matched::One(value)
+    }
+}
+impl From<Vec<ENotation>> for Matched {
+    fn from(value: Vec<ENotation>) -> Self {
+        Matched::Many(value)
+    }
+}
+
+pub fn is_identifier(n: &ENotation) -> bool {
+    match &n.body {
+        ENotationBody::Literal(literal) => match literal {
+            Literal::Identifier(_) => true,
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+pub struct MatchedResult {
+    binds: BTreeMap<String, Matched>,
+}
+
+impl Default for MatchedResult {
+    fn default() -> Self {
+        MatchedResult {
+            binds: BTreeMap::default(),
+        }
+    }
+}
+impl MatchedResult {
+    fn insert(&mut self, name: String, v: Matched) {
+        self.binds.insert(name, v);
+    }
+
+    pub fn get(&self, name: &String) -> &Matched {
+        match self.binds.get(name) {
+            Some(v) => v,
+            None => panic!("no matched result {} be found", name),
+        }
+    }
+    pub fn get_one(&self, name: &str) -> &ENotation {
+        match self.get(&name.to_string()) {
+            Matched::One(enotation) => enotation,
+            Matched::Many(_) => panic!("wrong extraction"),
+        }
+    }
+    pub fn get_many(&self, name: &str) -> &Vec<ENotation> {
+        match self.get(&name.to_string()) {
+            Matched::One(_) => panic!("wrong extraction"),
+            Matched::Many(es) => es,
+        }
+    }
+}
+
+pub fn ematch(binds: &mut MatchedResult, notation: &ENotation, pattern: EPattern) -> bool {
     match (&notation.body, pattern) {
         (_, Hole(name)) => {
-            binds.insert(name.to_string(), notation.clone());
+            binds.insert(name.to_string(), notation.clone().into());
             true
         }
         (enotation::ENotationBody::Container(container), pattern) => {
@@ -33,11 +90,7 @@ pub fn ematch(
     }
 }
 
-fn ematch_container(
-    binds: &mut BTreeMap<String, ENotation>,
-    container: &Container,
-    pattern: EPattern,
-) -> bool {
+fn ematch_container(binds: &mut MatchedResult, container: &Container, pattern: EPattern) -> bool {
     match (container, pattern) {
         (Container::List(list), EPattern::List(patterns)) => {
             let mut notations = list.elems().into_iter().peekable();
@@ -46,13 +99,7 @@ fn ematch_container(
                 match pat {
                     RestHole(name) => {
                         let rest = notations.map(|n| n.clone()).collect::<Vec<ENotation>>();
-                        let v = ENotation {
-                            body: ENotationBody::Container(Container::List(list::List::PL(
-                                list::PList { elems: rest },
-                            ))),
-                            span: Default::default(), // or any valid span value
-                        };
-                        binds.insert(name.to_string(), v);
+                        binds.insert(name.to_string(), rest.into());
                         return true;
                     }
                     pat => {
@@ -77,11 +124,7 @@ fn ematch_container(
     }
 }
 
-fn ematch_literal(
-    _binds: &mut BTreeMap<String, ENotation>,
-    literal: &Literal,
-    pattern: EPattern,
-) -> bool {
+fn ematch_literal(_binds: &mut MatchedResult, literal: &Literal, pattern: EPattern) -> bool {
     match (literal, pattern) {
         (Literal::Identifier(actual), Id(expected)) => actual.name == expected,
         _ => false,

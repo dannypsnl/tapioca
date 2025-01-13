@@ -1,10 +1,12 @@
+use crate::matcher::MatchedResult;
+
 use super::EPattern::*;
+use super::Matched;
 use super::ematch;
 use enotation::{ENotation, ENotationParser, Rule};
 use from_pest::FromPest;
 use insta::assert_snapshot;
 use pest::Parser;
-use std::collections::BTreeMap;
 use std::fmt::Display;
 
 fn notation(input: &str) -> ENotation {
@@ -12,17 +14,30 @@ fn notation(input: &str) -> ENotation {
     ENotation::from_pest(&mut output).unwrap()
 }
 
-struct DisplayVecENotation(Vec<(String, ENotation)>);
+struct DisplayVecENotation(Vec<(String, Matched)>);
 
-impl From<BTreeMap<String, ENotation>> for DisplayVecENotation {
-    fn from(map: BTreeMap<String, ENotation>) -> Self {
-        DisplayVecENotation(map.into_iter().collect())
+impl From<MatchedResult> for DisplayVecENotation {
+    fn from(result: MatchedResult) -> Self {
+        DisplayVecENotation(result.binds.into_iter().collect())
     }
 }
 impl Display for DisplayVecENotation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (binder, ele) in &self.0 {
-            writeln!(f, "{} = {}", binder, ele)?;
+            match ele {
+                Matched::One(enotation) => writeln!(f, "{} = {}", binder, enotation)?,
+                Matched::Many(vec) => {
+                    write!(f, "{} = (", binder)?;
+                    for (i, ele) in vec.into_iter().enumerate() {
+                        if i == 0 {
+                            write!(f, "{}", ele)?;
+                        } else {
+                            write!(f, " {}", ele)?;
+                        }
+                    }
+                    writeln!(f, ")")?;
+                }
+            }
         }
         Ok(())
     }
@@ -30,7 +45,7 @@ impl Display for DisplayVecENotation {
 
 #[test]
 fn match_define_form() {
-    let mut binds = BTreeMap::new();
+    let mut binds = MatchedResult::default();
     let res = ematch(
         &mut binds,
         &notation("(define x 1)"),
@@ -45,7 +60,7 @@ fn match_define_form() {
 
 #[test]
 fn match_define_form_2() {
-    let mut binds = BTreeMap::new();
+    let mut binds = MatchedResult::default();
     let res = ematch(
         &mut binds,
         &notation("(define x : i32 1)"),
@@ -67,7 +82,7 @@ fn match_define_form_2() {
 
 #[test]
 fn match_define_form_3() {
-    let mut binds = BTreeMap::new();
+    let mut binds = MatchedResult::default();
     let res = ematch(
         &mut binds,
         &notation("(define x : i32 1)"),
