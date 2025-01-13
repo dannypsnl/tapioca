@@ -17,7 +17,8 @@ pub fn expand_module(filename: &str) -> Result<Module, error::Error> {
     let input = std::fs::read_to_string(path).expect("failed to open file");
 
     let mut output = ENotationParser::parse(Rule::file, input.as_str()).unwrap();
-    let efile = EFile::from_pest(&mut output)?;
+    let mut efile = EFile::from_pest(&mut output)?;
+    efile.set_debug_file_name(filename);
 
     let mut module = Module {
         source: (filename.to_string(), Source::from(input)),
@@ -27,8 +28,7 @@ pub fn expand_module(filename: &str) -> Result<Module, error::Error> {
         requires: vec![],
     };
 
-    for mut notation in efile.notations {
-        notation.set_debug_file_name(filename);
+    for notation in efile.notations {
         module.expand_top_level(notation)?;
     }
 
