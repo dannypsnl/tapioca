@@ -1,4 +1,5 @@
 use crate::ast::{
+    expr::{Expr, ExprBody},
     typ::{Typ, TypBody},
     *,
 };
@@ -169,17 +170,22 @@ impl Module {
     }
 
     fn expand_expr(&mut self, notation: &ENotation) -> Result<Expr, error::Error> {
+        let span: ReportSpan = notation.span.clone().into();
         match &notation.body {
             enotation::ENotationBody::Literal(literal) => match literal {
-                Literal::Boolean(boolean) => Ok(Expr::Bool(boolean.value)),
-                Literal::Char(c) => Ok(Expr::Char(c.value)),
-                Literal::Float(float) => Ok(Expr::Float(float.value)),
+                Literal::Boolean(boolean) => Ok(ExprBody::Bool(boolean.value).with_span(span)),
+                Literal::Char(c) => Ok(ExprBody::Char(c.value).with_span(span)),
+                Literal::Float(float) => Ok(ExprBody::Float(float.value).with_span(span)),
                 Literal::Rational(rational) => {
-                    Ok(Expr::Rational(rational.value.0, rational.value.1))
+                    Ok(ExprBody::Rational(rational.value.0, rational.value.1).with_span(span))
                 }
-                Literal::Int(integer) => Ok(Expr::Int(integer.value)),
-                Literal::String_(string) => Ok(Expr::String(string.value.clone())),
-                Literal::Identifier(identifier) => Ok(Expr::Identifier(identifier.name.clone())),
+                Literal::Int(integer) => Ok(ExprBody::Int(integer.value).with_span(span)),
+                Literal::String_(string) => {
+                    Ok(ExprBody::String(string.value.clone()).with_span(span))
+                }
+                Literal::Identifier(identifier) => {
+                    Ok(ExprBody::Identifier(identifier.name.clone()).with_span(span))
+                }
             },
             _ => todo!(),
         }

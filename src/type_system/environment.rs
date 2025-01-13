@@ -1,5 +1,6 @@
 use crate::ast::{
-    Expr, Module, ReportSpan,
+    Module, ReportSpan,
+    expr::{Expr, ExprBody},
     typ::{Typ, TypBody},
 };
 use ariadne::{Label, Report, ReportKind};
@@ -17,10 +18,9 @@ impl<'a> Environment<'a> {
             Report::build(ReportKind::Error, span.clone())
                 .with_code(3)
                 .with_message("type mismatch")
-                .with_label(
-                    Label::new(span.clone())
-                        .with_message(format!("expected `{}`, found `{}`", expected, actual)),
-                )
+                .with_label(Label::new(expected.span.clone()).with_message("expected type"))
+                .with_label(Label::new(actual.span.clone()).with_message("actual type"))
+                .with_note(format!("expected `{}`, found `{}`", expected, actual))
                 .finish()
                 .eprint(self.source.clone())
                 .unwrap();
@@ -29,31 +29,31 @@ impl<'a> Environment<'a> {
 
     pub fn check(&self, span: &ReportSpan, exp: &Expr, typ: &Typ) {
         use TypBody::*;
-        match (&typ.body, exp) {
-            (Int, Expr::Int(_)) => (),
-            (I8, Expr::Int(_)) => (),
-            (I16, Expr::Int(_)) => (),
-            (I32, Expr::Int(_)) => (),
-            (I64, Expr::Int(_)) => (),
-            (U8, Expr::Int(_)) => (),
-            (U16, Expr::Int(_)) => (),
-            (U32, Expr::Int(_)) => (),
-            (U64, Expr::Int(_)) => (),
+        match (&typ.body, &exp.body) {
+            (Int, ExprBody::Int(_)) => (),
+            (I8, ExprBody::Int(_)) => (),
+            (I16, ExprBody::Int(_)) => (),
+            (I32, ExprBody::Int(_)) => (),
+            (I64, ExprBody::Int(_)) => (),
+            (U8, ExprBody::Int(_)) => (),
+            (U16, ExprBody::Int(_)) => (),
+            (U32, ExprBody::Int(_)) => (),
+            (U64, ExprBody::Int(_)) => (),
 
-            (Rational, Expr::Rational(_, _)) => (),
-            (Float, Expr::Float(_)) => (),
+            (Rational, ExprBody::Rational(_, _)) => (),
+            (Float, ExprBody::Float(_)) => (),
 
-            (Bool, Expr::Bool(_)) => (),
+            (Bool, ExprBody::Bool(_)) => (),
 
-            (Char, Expr::Char(_)) => (),
-            (String, Expr::String(_)) => (),
+            (Char, ExprBody::Char(_)) => (),
+            (String, ExprBody::String(_)) => (),
 
-            (_, Expr::Identifier(id)) => {
+            (_, ExprBody::Identifier(id)) => {
                 let actual = self.lookup(id, span);
                 self.unify(span, typ, actual);
             }
 
-            (_, exp) => {
+            (_, _) => {
                 let actual = self.infer(span, exp);
                 self.unify(span, typ, &actual);
             }
@@ -62,19 +62,19 @@ impl<'a> Environment<'a> {
 
     pub fn infer(&self, span: &ReportSpan, exp: &Expr) -> Typ {
         use TypBody::*;
-        // FIXME: The correct span here is the span of Expr, but currently I do that wrong so don't have
-        match exp {
-            Expr::Bool(_) => Bool.with_span(span.clone()),
-            Expr::Char(_) => Char.with_span(span.clone()),
-            Expr::String(_) => String.with_span(span.clone()),
-            Expr::Rational(_, _) => Rational.with_span(span.clone()),
-            Expr::Float(_) => Float.with_span(span.clone()),
-            Expr::Int(_) => Int.with_span(span.clone()),
-            Expr::Symbol(_) => Symbol.with_span(span.clone()),
-            Expr::Syntax(_) => Syntax.with_span(span.clone()),
-            Expr::Identifier(id) => self.lookup(id, span).clone(),
-            Expr::Tuple(vec) => {
-                Tuple(vec.iter().map(|e| self.infer(span, e)).collect()).with_span(span.clone())
+        let typ_span = exp.span.clone();
+        match &exp.body {
+            ExprBody::Bool(_) => Bool.with_span(typ_span.clone()),
+            ExprBody::Char(_) => Char.with_span(typ_span.clone()),
+            ExprBody::String(_) => String.with_span(typ_span.clone()),
+            ExprBody::Rational(_, _) => Rational.with_span(typ_span.clone()),
+            ExprBody::Float(_) => Float.with_span(typ_span.clone()),
+            ExprBody::Int(_) => Int.with_span(typ_span.clone()),
+            ExprBody::Symbol(_) => Symbol.with_span(typ_span.clone()),
+            ExprBody::Syntax(_) => Syntax.with_span(typ_span.clone()),
+            ExprBody::Identifier(id) => self.lookup(id, span).clone(),
+            ExprBody::Tuple(vec) => {
+                Tuple(vec.iter().map(|e| self.infer(span, e)).collect()).with_span(typ_span.clone())
             }
             _ => todo!(),
         }

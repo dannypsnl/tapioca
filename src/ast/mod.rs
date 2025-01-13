@@ -2,7 +2,9 @@ use ariadne::{Cache, Source};
 use enotation::ENotation;
 use serde::{Deserialize, Serialize};
 
+pub mod expr;
 pub mod typ;
+use expr::Expr;
 use typ::Typ;
 
 #[derive(Debug, Clone)]
@@ -64,27 +66,6 @@ pub enum DefineForm {
         params: Vec<String>,
         body: Vec<Expr>,
     },
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Expr {
-    Bool(bool),
-    Char(char),
-    String(String),
-    Rational(i64, i64),
-    Float(f64),
-    Int(i64),
-
-    Identifier(String),
-    Symbol(String),
-
-    App(Box<Expr>, Vec<Expr>),
-
-    List(Vec<Expr>),
-    Tuple(Vec<Expr>),
-    Object(Vec<(String, Expr)>),
-
-    Syntax(Box<Expr>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
