@@ -1,13 +1,7 @@
-use crate::ast::{DefineForm, Expr, Module, Typ};
+use crate::ast::{DefineForm, Module, Typ};
 use ariadne::{Report, ReportKind};
 
 mod environment;
-
-fn check_type(typ: &Typ, exp: &Expr) {
-    match (typ, exp) {
-        _ => todo!(),
-    }
-}
 
 pub fn check(module: &Module) {
     let mut env = environment::Environment::new(&module.source);
@@ -17,7 +11,7 @@ pub fn check(module: &Module) {
     for def in &module.define_forms {
         match def {
             DefineForm::DefineConstant { span, id, expr } => {
-                check_type(env.lookup(id, span), expr);
+                env.check(span, expr, env.lookup(id, span));
             }
             DefineForm::DefineFunction {
                 span,
@@ -38,9 +32,9 @@ pub fn check(module: &Module) {
                         let taken = body.len() - 1;
                         let it = body.iter();
                         for middle_statement in it.clone().take(taken) {
-                            check_type(&Typ::Void, middle_statement);
+                            env.check(span, middle_statement, &Typ::Void);
                         }
-                        check_type(&*result, it.last().unwrap());
+                        env.check(span, it.last().unwrap(), &*result);
                     }
                     _ => {
                         Report::build(ReportKind::Error, span.clone())

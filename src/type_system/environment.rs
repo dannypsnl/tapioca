@@ -1,6 +1,6 @@
 use ariadne::{Report, ReportKind, Source};
 
-use crate::ast::{ReportSpan, Typ};
+use crate::ast::{Expr, ReportSpan, Typ};
 use std::collections::BTreeMap;
 
 pub struct Environment<'a> {
@@ -10,6 +10,12 @@ pub struct Environment<'a> {
 }
 
 impl<'a> Environment<'a> {
+    pub fn unify(&self, expected: &Typ, actual: &Typ) {
+        if expected != actual {
+            panic!("Type mismatch: expected `{}`, found `{}`", expected, actual);
+        }
+    }
+
     pub fn derive(&self) -> Environment {
         let mut derived = Environment::new(self.source);
         derived.parent = Some(self);
@@ -33,6 +39,54 @@ impl<'a> Environment<'a> {
                     unreachable!()
                 }
             },
+        }
+    }
+
+    pub fn check(&self, span: &ReportSpan, exp: &Expr, typ: &Typ) {
+        match (typ, exp) {
+            (Typ::Int, Expr::Int(_)) => (),
+            (Typ::I8, Expr::Int(_)) => (),
+            (Typ::I16, Expr::Int(_)) => (),
+            (Typ::I32, Expr::Int(_)) => (),
+            (Typ::I64, Expr::Int(_)) => (),
+            (Typ::U8, Expr::Int(_)) => (),
+            (Typ::U16, Expr::Int(_)) => (),
+            (Typ::U32, Expr::Int(_)) => (),
+            (Typ::U64, Expr::Int(_)) => (),
+
+            (Typ::Rational, Expr::Rational(_, _)) => (),
+            (Typ::Float, Expr::Float(_)) => (),
+
+            (Typ::Bool, Expr::Bool(_)) => (),
+
+            (Typ::Char, Expr::Char(_)) => (),
+            (Typ::String, Expr::String(_)) => (),
+
+            (ty, Expr::Identifier(id)) => {
+                let actual = self.lookup(id, span);
+                self.unify(ty, actual);
+            }
+
+            (typ, exp) => {
+                let actual = self.infer(span, exp);
+                self.unify(typ, &actual);
+            }
+        }
+    }
+
+    pub fn infer(&self, span: &ReportSpan, exp: &Expr) -> Typ {
+        match exp {
+            Expr::Bool(_) => Typ::Bool,
+            Expr::Char(_) => Typ::Char,
+            Expr::String(_) => Typ::String,
+            Expr::Rational(_, _) => Typ::Rational,
+            Expr::Float(_) => Typ::Float,
+            Expr::Int(_) => Typ::Int,
+            Expr::Symbol(_) => Typ::Symbol,
+            Expr::Syntax(_) => Typ::Syntax,
+            Expr::Identifier(id) => self.lookup(id, span).clone(),
+            Expr::Tuple(vec) => Typ::Tuple(vec.iter().map(|e| self.infer(span, e)).collect()),
+            _ => todo!(),
         }
     }
 }

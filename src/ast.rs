@@ -70,7 +70,7 @@ pub enum Expr {
     Syntax(Box<Expr>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Typ {
     Bool,
     Char,

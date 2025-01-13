@@ -4,3 +4,6 @@
 
 (: x : i32)
 (define x 1)
+
+(: y : string)
+(define y 1)
