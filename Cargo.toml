@@ -6,7 +6,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ariadne = "0.5.0"
+ariadne = { version = "0.5.0", features = ["auto-color"] }
 enotation = { git = "https://github.com/dannypsnl/enotation.git" }
 from-pest = "0.3.3"
 pest = "2.7.15"
