@@ -1,4 +1,7 @@
-use crate::ast::{Expr, Module, ReportSpan, Typ};
+use crate::ast::{
+    Expr, Module, ReportSpan,
+    typ::{Typ, TypBody},
+};
 use ariadne::{Label, Report, ReportKind};
 use std::collections::BTreeMap;
 
@@ -25,31 +28,32 @@ impl<'a> Environment<'a> {
     }
 
     pub fn check(&self, span: &ReportSpan, exp: &Expr, typ: &Typ) {
-        match (typ, exp) {
-            (Typ::Int, Expr::Int(_)) => (),
-            (Typ::I8, Expr::Int(_)) => (),
-            (Typ::I16, Expr::Int(_)) => (),
-            (Typ::I32, Expr::Int(_)) => (),
-            (Typ::I64, Expr::Int(_)) => (),
-            (Typ::U8, Expr::Int(_)) => (),
-            (Typ::U16, Expr::Int(_)) => (),
-            (Typ::U32, Expr::Int(_)) => (),
-            (Typ::U64, Expr::Int(_)) => (),
+        use TypBody::*;
+        match (&typ.body, exp) {
+            (Int, Expr::Int(_)) => (),
+            (I8, Expr::Int(_)) => (),
+            (I16, Expr::Int(_)) => (),
+            (I32, Expr::Int(_)) => (),
+            (I64, Expr::Int(_)) => (),
+            (U8, Expr::Int(_)) => (),
+            (U16, Expr::Int(_)) => (),
+            (U32, Expr::Int(_)) => (),
+            (U64, Expr::Int(_)) => (),
 
-            (Typ::Rational, Expr::Rational(_, _)) => (),
-            (Typ::Float, Expr::Float(_)) => (),
+            (Rational, Expr::Rational(_, _)) => (),
+            (Float, Expr::Float(_)) => (),
 
-            (Typ::Bool, Expr::Bool(_)) => (),
+            (Bool, Expr::Bool(_)) => (),
 
-            (Typ::Char, Expr::Char(_)) => (),
-            (Typ::String, Expr::String(_)) => (),
+            (Char, Expr::Char(_)) => (),
+            (String, Expr::String(_)) => (),
 
-            (ty, Expr::Identifier(id)) => {
+            (_, Expr::Identifier(id)) => {
                 let actual = self.lookup(id, span);
-                self.unify(span, ty, actual);
+                self.unify(span, typ, actual);
             }
 
-            (typ, exp) => {
+            (_, exp) => {
                 let actual = self.infer(span, exp);
                 self.unify(span, typ, &actual);
             }
@@ -57,17 +61,21 @@ impl<'a> Environment<'a> {
     }
 
     pub fn infer(&self, span: &ReportSpan, exp: &Expr) -> Typ {
+        use TypBody::*;
+        // FIXME: The correct span here is the span of Expr, but currently I do that wrong so don't have
         match exp {
-            Expr::Bool(_) => Typ::Bool,
-            Expr::Char(_) => Typ::Char,
-            Expr::String(_) => Typ::String,
-            Expr::Rational(_, _) => Typ::Rational,
-            Expr::Float(_) => Typ::Float,
-            Expr::Int(_) => Typ::Int,
-            Expr::Symbol(_) => Typ::Symbol,
-            Expr::Syntax(_) => Typ::Syntax,
+            Expr::Bool(_) => Bool.with_span(span.clone()),
+            Expr::Char(_) => Char.with_span(span.clone()),
+            Expr::String(_) => String.with_span(span.clone()),
+            Expr::Rational(_, _) => Rational.with_span(span.clone()),
+            Expr::Float(_) => Float.with_span(span.clone()),
+            Expr::Int(_) => Int.with_span(span.clone()),
+            Expr::Symbol(_) => Symbol.with_span(span.clone()),
+            Expr::Syntax(_) => Syntax.with_span(span.clone()),
             Expr::Identifier(id) => self.lookup(id, span).clone(),
-            Expr::Tuple(vec) => Typ::Tuple(vec.iter().map(|e| self.infer(span, e)).collect()),
+            Expr::Tuple(vec) => {
+                Tuple(vec.iter().map(|e| self.infer(span, e)).collect()).with_span(span.clone())
+            }
             _ => todo!(),
         }
     }

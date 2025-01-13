@@ -1,4 +1,4 @@
-use crate::ast::{DefineForm, Module, Typ};
+use crate::ast::{DefineForm, Module, typ::TypBody};
 use ariadne::{Report, ReportKind};
 
 mod environment;
@@ -20,8 +20,8 @@ pub fn check(module: &Module) {
                 body,
             } => {
                 let ty = env.lookup(id, span);
-                match ty {
-                    Typ::Func {
+                match &ty.body {
+                    TypBody::Func {
                         params: typs,
                         result,
                     } => {
@@ -32,7 +32,11 @@ pub fn check(module: &Module) {
                         let taken = body.len() - 1;
                         let it = body.iter();
                         for middle_statement in it.clone().take(taken) {
-                            env.check(span, middle_statement, &Typ::Void);
+                            env.check(
+                                span,
+                                middle_statement,
+                                &TypBody::Void.with_span(span.clone()),
+                            );
                         }
                         env.check(span, it.last().unwrap(), &*result);
                     }

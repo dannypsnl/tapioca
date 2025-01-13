@@ -1,16 +1,17 @@
-use crate::ast::*;
+use crate::ast::{
+    typ::{Typ, TypBody},
+    *,
+};
 use crate::error;
 use crate::matcher::{EPattern::*, ematch};
 use ariadne::{Color, Fmt, Report, ReportKind, Source};
-use enotation::ENotationBody;
-use enotation::SetDebugFileName;
-use enotation::container::Container;
-use enotation::literal::Literal;
-use enotation::{EFile, ENotation, ENotationParser, Rule};
+use enotation::{
+    EFile, ENotation, ENotationBody, ENotationParser, Rule, SetDebugFileName, container::Container,
+    literal::Literal,
+};
 use from_pest::FromPest;
 use pest::Parser;
-use std::collections::BTreeMap;
-use std::path::Path;
+use std::{collections::BTreeMap, path::Path};
 
 pub fn expand_module(filename: &str) -> Result<Module, error::Error> {
     let path: &Path = Path::new(filename);
@@ -112,24 +113,25 @@ impl Module {
     }
 
     fn expand_type(&mut self, notation: &ENotation) -> Result<Typ, error::Error> {
+        let span: ReportSpan = notation.span.clone().into();
         match &notation.body {
             ENotationBody::Literal(Literal::Identifier(id)) => match id.name.as_str() {
-                "boolean" => Ok(Typ::Bool),
-                "char" => Ok(Typ::Char),
-                "string" => Ok(Typ::String),
-                "symbol" => Ok(Typ::Symbol),
-                "rational" => Ok(Typ::Rational),
-                "float" => Ok(Typ::Float),
-                "int" => Ok(Typ::Int),
-                "i8" => Ok(Typ::I8),
-                "i16" => Ok(Typ::I16),
-                "i32" => Ok(Typ::I32),
-                "i64" => Ok(Typ::I64),
-                "u8" => Ok(Typ::U8),
-                "u16" => Ok(Typ::U16),
-                "u32" => Ok(Typ::U32),
-                "u64" => Ok(Typ::U64),
-                "syntax" => Ok(Typ::Syntax),
+                "boolean" => Ok(TypBody::Bool.with_span(span)),
+                "char" => Ok(TypBody::Char.with_span(span)),
+                "string" => Ok(TypBody::String.with_span(span)),
+                "symbol" => Ok(TypBody::Symbol.with_span(span)),
+                "rational" => Ok(TypBody::Rational.with_span(span)),
+                "float" => Ok(TypBody::Float.with_span(span)),
+                "int" => Ok(TypBody::Int.with_span(span)),
+                "i8" => Ok(TypBody::I8.with_span(span)),
+                "i16" => Ok(TypBody::I16.with_span(span)),
+                "i32" => Ok(TypBody::I32.with_span(span)),
+                "i64" => Ok(TypBody::I64.with_span(span)),
+                "u8" => Ok(TypBody::U8.with_span(span)),
+                "u16" => Ok(TypBody::U16.with_span(span)),
+                "u32" => Ok(TypBody::U32.with_span(span)),
+                "u64" => Ok(TypBody::U64.with_span(span)),
+                "syntax" => Ok(TypBody::Syntax.with_span(span)),
                 // unknown type
                 _ => todo!(),
             },
@@ -138,16 +140,16 @@ impl Module {
                 let head = ts.next().unwrap();
                 if ematch(&mut BTreeMap::default(), head, Id("array")) {
                     let t = self.expand_type(ts.next().unwrap())?;
-                    Ok(Typ::Array(t.into()))
+                    Ok(TypBody::Array(t.into()).with_span(span))
                 } else if ematch(&mut BTreeMap::default(), head, Id("list")) {
                     let t = self.expand_type(ts.next().unwrap())?;
-                    Ok(Typ::Array(t.into()))
+                    Ok(TypBody::Array(t.into()).with_span(span))
                 } else if ematch(&mut BTreeMap::default(), head, Id("tuple")) {
                     let mut xs = vec![];
                     for t in ts {
                         xs.push(self.expand_type(t)?);
                     }
-                    Ok(Typ::Tuple(xs))
+                    Ok(TypBody::Tuple(xs).with_span(span))
                 } else {
                     todo!()
                 }
@@ -157,7 +159,7 @@ impl Module {
                 for pair in &obj.pairs {
                     fields.push((pair.key.name.clone(), self.expand_type(&pair.value)?))
                 }
-                Ok(Typ::Record(fields))
+                Ok(TypBody::Record(fields).with_span(span))
             }
             _ => {
                 self.bad_form(notation);

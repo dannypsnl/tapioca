@@ -1,7 +1,9 @@
 use ariadne::{Cache, Source};
 use enotation::ENotation;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+
+pub mod typ;
+use typ::Typ;
 
 #[derive(Debug, Clone)]
 pub struct Module {
@@ -86,79 +88,6 @@ pub enum Expr {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum Typ {
-    Bool,
-    Char,
-    String,
-    Symbol,
-    Rational,
-    Float,
-    Int,
-    I8,
-    I16,
-    I32,
-    I64,
-    U8,
-    U16,
-    U32,
-    U64,
-    Syntax,
-    Void,
-    Array(Box<Typ>),
-    List(Box<Typ>),
-    Tuple(Vec<Typ>),
-    Record(Vec<(String, Typ)>),
-    Func { params: Vec<Typ>, result: Box<Typ> },
-}
-impl Display for Typ {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Typ::Bool => write!(f, "bool"),
-            Typ::Char => write!(f, "char"),
-            Typ::String => write!(f, "string"),
-            Typ::Symbol => write!(f, "symbol"),
-            Typ::Rational => write!(f, "rational"),
-            Typ::Float => write!(f, "float"),
-            Typ::Int => write!(f, "int"),
-            Typ::I8 => write!(f, "i8"),
-            Typ::I16 => write!(f, "i16"),
-            Typ::I32 => write!(f, "i32"),
-            Typ::I64 => write!(f, "i64"),
-            Typ::U8 => write!(f, "u8"),
-            Typ::U16 => write!(f, "u16"),
-            Typ::U32 => write!(f, "u32"),
-            Typ::U64 => write!(f, "u64"),
-            Typ::Syntax => write!(f, "syntax"),
-            Typ::Void => write!(f, "void"),
-            Typ::Array(typ) => write!(f, "(array {})", typ),
-            Typ::List(typ) => write!(f, "(list {})", typ),
-            Typ::Tuple(vec) => {
-                write!(f, "(tuple")?;
-                for (i, typ) in vec.iter().enumerate() {
-                    if i == 0 {
-                        write!(f, "{}", typ)?;
-                    } else {
-                        write!(f, " {}", typ)?;
-                    }
-                }
-                write!(f, ")")
-            }
-            Typ::Record(_vec) => todo!(),
-            Typ::Func { params, result } => {
-                for (i, typ) in params.iter().enumerate() {
-                    if i == 0 {
-                        write!(f, "{}", typ)?;
-                    } else {
-                        write!(f, " {}", typ)?;
-                    }
-                }
-                write!(f, "-> {}", result)
-            }
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReportSpan {
     source: String,
     start_offset: usize,
