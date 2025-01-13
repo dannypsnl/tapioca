@@ -54,7 +54,8 @@ impl<'a> Module<'a> {
             List(vec![Id("require"), RestHole("_")]),
         ) {
             let out = Color::Fixed(81);
-            Report::build(ReportKind::Error, ReportSpan::new(notation.span))
+            let span: ReportSpan = notation.span.clone().into();
+            Report::build(ReportKind::Error, span)
                 .with_code(3)
                 .with_message("bad require")
                 .with_note(format!("{} form must ……", "match".fg(out)))
@@ -94,6 +95,7 @@ impl<'a> Module<'a> {
         ) {
             let typ = self.expand_expr(binds.get("expr").unwrap())?;
             self.define_forms.push(DefineForm::DefineConstant {
+                span: notation.span.clone().into(),
                 id: binds.get("name").unwrap().to_string(),
                 expr: typ,
             });
@@ -176,7 +178,8 @@ impl<'a> Module<'a> {
 
     fn bad_form(&mut self, notation: &ENotation) {
         let out = Color::Fixed(81);
-        Report::build(ReportKind::Error, ReportSpan::new(notation.span.clone()))
+        let span: ReportSpan = notation.span.clone().into();
+        Report::build(ReportKind::Error, span)
             .with_code(3)
             .with_message("bad form")
             .with_note(format!("{} form must ……", "match".fg(out)))

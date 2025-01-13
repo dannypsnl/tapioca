@@ -96,7 +96,7 @@ checksum = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
 [[package]]
 name = "enotation"
 version = "0.2.0"
-source = "git+https://github.com/dannypsnl/enotation.git#67ee4fec2216d7c60bb2905aea49b661f7208322"
+source = "git+https://github.com/dannypsnl/enotation.git#e667c4b2180765f1f0c63ba0e24a854a0958ed09"
 dependencies = [
  "ariadne",
  "from-pest",
