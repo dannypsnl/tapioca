@@ -1,4 +1,4 @@
-use ariadne::{Report, ReportKind, Source};
+use ariadne::{Label, Report, ReportKind, Source};
 
 use crate::ast::{Expr, ReportSpan, Typ};
 use std::collections::BTreeMap;
@@ -14,10 +14,11 @@ impl<'a> Environment<'a> {
         if expected != actual {
             Report::build(ReportKind::Error, span.clone())
                 .with_code(3)
-                .with_message(format!(
-                    "type mismatch: expected `{}`, found `{}`",
-                    expected, actual
-                ))
+                .with_message("type mismatch")
+                .with_label(
+                    Label::new(span.clone())
+                        .with_message(format!("expected `{}`, found `{}`", expected, actual)),
+                )
                 .finish()
                 .eprint(self.source.clone())
                 .unwrap();
