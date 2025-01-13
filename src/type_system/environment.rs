@@ -10,9 +10,17 @@ pub struct Environment<'a> {
 }
 
 impl<'a> Environment<'a> {
-    pub fn unify(&self, expected: &Typ, actual: &Typ) {
+    pub fn unify(&self, span: &ReportSpan, expected: &Typ, actual: &Typ) {
         if expected != actual {
-            panic!("Type mismatch: expected `{}`, found `{}`", expected, actual);
+            Report::build(ReportKind::Error, span.clone())
+                .with_code(3)
+                .with_message(format!(
+                    "type mismatch: expected `{}`, found `{}`",
+                    expected, actual
+                ))
+                .finish()
+                .eprint(self.source.clone())
+                .unwrap();
         }
     }
 
@@ -64,12 +72,12 @@ impl<'a> Environment<'a> {
 
             (ty, Expr::Identifier(id)) => {
                 let actual = self.lookup(id, span);
-                self.unify(ty, actual);
+                self.unify(span, ty, actual);
             }
 
             (typ, exp) => {
                 let actual = self.infer(span, exp);
-                self.unify(typ, &actual);
+                self.unify(span, typ, &actual);
             }
         }
     }
