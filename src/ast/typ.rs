@@ -28,7 +28,7 @@ pub enum TypBody {
     Func { params: Vec<Typ>, result: Box<Typ> },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Typ {
     pub span: ReportSpan,
     pub body: TypBody,
@@ -37,6 +37,12 @@ pub struct Typ {
 impl TypBody {
     pub fn with_span(self, span: ReportSpan) -> Typ {
         Typ { span, body: self }
+    }
+}
+
+impl PartialEq for Typ {
+    fn eq(&self, other: &Self) -> bool {
+        self.body == other.body
     }
 }
 
@@ -88,7 +94,7 @@ impl Display for TypBody {
                         write!(f, " {}", typ)?;
                     }
                 }
-                write!(f, "-> {}", result)
+                write!(f, " -> {}", result)
             }
         }
     }

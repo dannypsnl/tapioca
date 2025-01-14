@@ -7,3 +7,7 @@
 
 (: y : string)
 (define y 1)
+
+(: f : int int -> int)
+(define (f a b)
+  "abc")

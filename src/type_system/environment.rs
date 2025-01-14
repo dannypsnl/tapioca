@@ -48,11 +48,6 @@ impl<'a> Environment<'a> {
             (Char, ExprBody::Char(_)) => (),
             (String, ExprBody::String(_)) => (),
 
-            (_, ExprBody::Identifier(id)) => {
-                let actual = self.lookup(id, span);
-                self.unify(span, typ, actual);
-            }
-
             (_, _) => {
                 let actual = self.infer(span, exp);
                 self.unify(span, typ, &actual);

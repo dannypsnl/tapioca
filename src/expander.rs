@@ -12,7 +12,7 @@ use enotation::{
 };
 use from_pest::FromPest;
 use pest::Parser;
-use std::path::Path;
+use std::{path::Path, vec};
 
 pub fn expand_module(filename: &str) -> Result<Module, error::Error> {
     let path: &Path = Path::new(filename);
@@ -82,12 +82,13 @@ impl Module {
         if ematch(
             &mut binds,
             &notation,
-            List(vec![Id(":"), Hole("name"), Id(":"), Hole("typ")]),
+            List(vec![Id(":"), Hole("name"), Id(":"), RestHole("typ")]),
         ) {
-            let exp = self.expand_type(binds.get_one("typ"))?;
+            let typ = self.expand_type(notation.span.clone().into(), binds.get_many("typ"));
+            println!("{}", typ);
             self.claim_forms.push(ClaimForm {
                 id: binds.get_one("name").to_string(),
-                typ: exp,
+                typ,
             })
         }
 
@@ -99,6 +100,33 @@ impl Module {
         if ematch(
             &mut binds,
             &notation,
+            List(vec![
+                Id("define"),
+                List(vec![Hole("name"), RestHole("params")]),
+                RestHole("body"),
+            ]),
+        ) {
+            let name = binds.get_one("name");
+
+            let mut params = vec![];
+            for p in binds.get_many("params") {
+                params.push(p.to_string());
+            }
+
+            let mut body = vec![];
+            for p in binds.get_many("body") {
+                body.push(self.expand_expr(p)?);
+            }
+
+            self.define_forms.push(DefineForm::DefineFunction {
+                span: notation.span.clone().into(),
+                id: name.to_string(),
+                params,
+                body,
+            });
+        } else if ematch(
+            &mut binds,
+            &notation,
             List(vec![Id("define"), Hole("name"), Hole("expr")]),
         ) {
             let typ = self.expand_expr(binds.get_one("expr"))?;
@@ -107,31 +135,69 @@ impl Module {
                 id: binds.get_one("name").to_string(),
                 expr: typ,
             });
+        } else {
+            let span: ReportSpan = notation.span.clone().into();
+            Report::build(ReportKind::Error, span.clone())
+                .with_code(3)
+                .with_message("bad define")
+                .with_label(Label::new(span.clone()))
+                .finish()
+                .eprint(self.clone())
+                .unwrap();
         }
 
         Ok(())
     }
 
-    fn expand_type(&mut self, notation: &ENotation) -> Result<Typ, error::Error> {
+    fn expand_type(&mut self, span: ReportSpan, ns: &Vec<ENotation>) -> Typ {
+        if ns.len() == 0 {
+            Report::build(ReportKind::Error, span.clone())
+                .finish()
+                .eprint(self.clone())
+                .unwrap();
+            panic!()
+        } else if ns.len() == 1 {
+            self.expand_one_type(&ns[0])
+        } else {
+            let mut stack = vec![];
+            let mut ns = ns.into_iter();
+            while let Some(n) = ns.next() {
+                if ematch(&mut MatchedResult::default(), n, Id("->")) {
+                    return TypBody::Func {
+                        params: stack,
+                        result: self
+                            .expand_type(span.clone(), &ns.cloned().collect())
+                            .into(),
+                    }
+                    .with_span(span.clone());
+                } else {
+                    stack.push(self.expand_one_type(n));
+                }
+            }
+            unreachable!()
+        }
+    }
+
+    fn expand_one_type(&mut self, notation: &ENotation) -> Typ {
         let span: ReportSpan = notation.span.clone().into();
         match &notation.body {
             ENotationBody::Literal(Literal::Identifier(id)) => match id.name.as_str() {
-                "boolean" => Ok(TypBody::Bool.with_span(span)),
-                "char" => Ok(TypBody::Char.with_span(span)),
-                "string" => Ok(TypBody::String.with_span(span)),
-                "symbol" => Ok(TypBody::Symbol.with_span(span)),
-                "rational" => Ok(TypBody::Rational.with_span(span)),
-                "float" => Ok(TypBody::Float.with_span(span)),
-                "int" => Ok(TypBody::Int.with_span(span)),
-                "i8" => Ok(TypBody::I8.with_span(span)),
-                "i16" => Ok(TypBody::I16.with_span(span)),
-                "i32" => Ok(TypBody::I32.with_span(span)),
-                "i64" => Ok(TypBody::I64.with_span(span)),
-                "u8" => Ok(TypBody::U8.with_span(span)),
-                "u16" => Ok(TypBody::U16.with_span(span)),
-                "u32" => Ok(TypBody::U32.with_span(span)),
-                "u64" => Ok(TypBody::U64.with_span(span)),
-                "syntax" => Ok(TypBody::Syntax.with_span(span)),
+                "boolean" => TypBody::Bool.with_span(span),
+                "char" => TypBody::Char.with_span(span),
+                "string" => TypBody::String.with_span(span),
+                "symbol" => TypBody::Symbol.with_span(span),
+                "rational" => TypBody::Rational.with_span(span),
+                "float" => TypBody::Float.with_span(span),
+                "int" => TypBody::Int.with_span(span),
+                "i8" => TypBody::I8.with_span(span),
+                "i16" => TypBody::I16.with_span(span),
+                "i32" => TypBody::I32.with_span(span),
+                "i64" => TypBody::I64.with_span(span),
+                "u8" => TypBody::U8.with_span(span),
+                "u16" => TypBody::U16.with_span(span),
+                "u32" => TypBody::U32.with_span(span),
+                "u64" => TypBody::U64.with_span(span),
+                "syntax" => TypBody::Syntax.with_span(span),
                 // unknown type
                 _ => todo!(),
             },
@@ -139,17 +205,17 @@ impl Module {
                 let mut ts = list.elems().into_iter();
                 let head = ts.next().unwrap();
                 if ematch(&mut MatchedResult::default(), head, Id("array")) {
-                    let t = self.expand_type(ts.next().unwrap())?;
-                    Ok(TypBody::Array(t.into()).with_span(span))
+                    let t = self.expand_one_type(ts.next().unwrap());
+                    TypBody::Array(t.into()).with_span(span)
                 } else if ematch(&mut MatchedResult::default(), head, Id("list")) {
-                    let t = self.expand_type(ts.next().unwrap())?;
-                    Ok(TypBody::Array(t.into()).with_span(span))
+                    let t = self.expand_one_type(ts.next().unwrap());
+                    TypBody::Array(t.into()).with_span(span)
                 } else if ematch(&mut MatchedResult::default(), head, Id("tuple")) {
                     let mut xs = vec![];
                     for t in ts {
-                        xs.push(self.expand_type(t)?);
+                        xs.push(self.expand_one_type(t));
                     }
-                    Ok(TypBody::Tuple(xs).with_span(span))
+                    TypBody::Tuple(xs).with_span(span)
                 } else {
                     todo!()
                 }
@@ -157,9 +223,9 @@ impl Module {
             ENotationBody::Container(Container::Object(obj)) => {
                 let mut fields = vec![];
                 for pair in &obj.pairs {
-                    fields.push((pair.key.name.clone(), self.expand_type(&pair.value)?))
+                    fields.push((pair.key.name.clone(), self.expand_one_type(&pair.value)))
                 }
-                Ok(TypBody::Record(fields).with_span(span))
+                TypBody::Record(fields).with_span(span)
             }
             _ => {
                 self.bad_form(notation);
