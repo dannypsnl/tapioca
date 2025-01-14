@@ -1,9 +1,10 @@
 use crate::ast::{DefineForm, Module, typ::TypBody};
 use ariadne::{Report, ReportKind};
+use environment::Environment;
 
-mod environment;
+pub mod environment;
 
-pub fn check(module: &Module) {
+pub fn check(module: &Module) -> Environment {
     let mut env = environment::Environment::new(&module);
     for claim in &module.claim_forms {
         env.insert(claim.id.clone(), claim.typ.clone());
@@ -18,6 +19,7 @@ pub fn check(module: &Module) {
                 id,
                 params,
                 body,
+                returned,
             } => {
                 let ty = env.lookup(id, span);
                 match &ty.body {
@@ -29,16 +31,14 @@ pub fn check(module: &Module) {
                         for (id, typ) in params.into_iter().zip(typs) {
                             env.insert(id.clone(), typ.clone());
                         }
-                        let taken = body.len() - 1;
-                        let it = body.iter();
-                        for middle_statement in it.clone().take(taken) {
+                        for middle_statement in body {
                             env.check(
                                 span,
                                 middle_statement,
                                 &TypBody::Void.with_span(span.clone()),
                             );
                         }
-                        env.check(span, it.last().unwrap(), &*result);
+                        env.check(span, returned, &*result);
                     }
                     _ => {
                         Report::build(ReportKind::Error, span.clone())
@@ -56,4 +56,6 @@ pub fn check(module: &Module) {
             }
         }
     }
+
+    env
 }

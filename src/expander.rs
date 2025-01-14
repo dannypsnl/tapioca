@@ -117,13 +117,15 @@ impl Module {
             for p in binds.get_many("body") {
                 body.push(self.expand_expr(p)?);
             }
-
-            self.define_forms.push(DefineForm::DefineFunction {
-                span: notation.span.clone().into(),
-                id: name.to_string(),
-                params,
-                body,
-            });
+            if let Some((returned, body)) = body.split_last() {
+                self.define_forms.push(DefineForm::DefineFunction {
+                    span: notation.span.clone().into(),
+                    id: name.to_string(),
+                    params,
+                    body: body.into(),
+                    returned: returned.clone(),
+                });
+            }
         } else if ematch(
             &mut binds,
             &notation,

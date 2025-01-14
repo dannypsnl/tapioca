@@ -65,6 +65,7 @@ pub enum DefineForm {
         id: String,
         params: Vec<String>,
         body: Vec<Expr>,
+        returned: Expr,
     },
 }
 
