@@ -10,7 +10,8 @@ impl Display for ExprBody {
                 write!(
                     f,
                     "{{origin: {}, bind: {}}}",
-                    identifier.origin_name, identifier.lookup_name
+                    identifier.info_name(),
+                    identifier.lookup_name()
                 )
             }
             _ => unreachable!(),
