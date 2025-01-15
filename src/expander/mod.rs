@@ -15,7 +15,7 @@ use expr::Binding;
 use from_pest::FromPest;
 use pest::Parser;
 use scope::Scope;
-use std::{collections::HashSet, path::Path, vec};
+use std::{collections::HashSet, path::Path, thread::panicking, vec};
 
 pub mod scope;
 
@@ -190,8 +190,8 @@ impl Expander<'_> {
                     span: notation.span.clone().into(),
                     id: name.to_string(),
                     params,
-                    body: body.into(),
-                    returned: returned.clone(),
+                    body: ExprBody::Begin(body.into(), Box::new(returned.clone()))
+                        .with_span(notation.span.clone().into()),
                 });
             }
         } else if ematch(
@@ -359,8 +359,14 @@ impl Expander<'_> {
         ) {
             let stack = stack.extend(self.let_scope());
             let bindings = self.expand_bindings(&stack, binds.get_many("bindings"));
-            let body = self.expand_many_expr(&stack, binds.get_many("body"));
-            ExprBody::Let(bindings, body).with_span(list.span.clone().into())
+            let exprs = self.expand_many_expr(&stack, binds.get_many("body"));
+            if let Some((last, many)) = exprs.split_last() {
+                let body = ExprBody::Begin(many.into(), Box::new(last.clone()))
+                    .with_span(last.span.clone());
+                ExprBody::Let(bindings, Box::new(body)).with_span(list.span.clone().into())
+            } else {
+                panic!("let body cannot be empty")
+            }
         } else {
             todo!()
         }
@@ -376,9 +382,13 @@ impl Expander<'_> {
         let mut binds = MatchedResult::default();
         if ematch(&mut binds, notation, List(vec![Hole("name"), Hole("expr")])) {
             let name = binds.get_one("name").to_string();
-            self.insert(&name, stack.as_set(), self.unique_name(&name));
+            let new_name = self.unique_name(&name);
+            self.insert(&name, stack.as_set(), new_name.clone());
             let expr = self.expand_expr(stack.parent.unwrap(), binds.get_one("expr"));
-            Binding { name, expr }
+            Binding {
+                name: new_name,
+                expr,
+            }
         } else {
             self.bad_form(notation);
             panic!("bad form")

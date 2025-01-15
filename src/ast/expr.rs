@@ -14,7 +14,9 @@ pub enum ExprBody {
     Identifier(String),
     Symbol(String),
 
-    Let(Vec<Binding>, Vec<Expr>),
+    Begin(Vec<Expr>, Box<Expr>),
+
+    Let(Vec<Binding>, Box<Expr>),
 
     App(Box<Expr>, Vec<Expr>),
 

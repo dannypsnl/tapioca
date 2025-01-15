@@ -19,7 +19,6 @@ pub fn check(module: &Module) -> Environment {
                 id,
                 params,
                 body,
-                returned,
             } => {
                 let ty = env.lookup(id, span);
                 match &ty.body {
@@ -31,14 +30,7 @@ pub fn check(module: &Module) -> Environment {
                         for (id, typ) in params.into_iter().zip(typs) {
                             env.insert(id.clone(), typ.clone());
                         }
-                        for middle_statement in body {
-                            env.check(
-                                span,
-                                middle_statement,
-                                &TypBody::Void.with_span(span.clone()),
-                            );
-                        }
-                        env.check(span, returned, &*result);
+                        env.check(span, body, &*result);
                     }
                     _ => {
                         Report::build(ReportKind::Error, span.clone())

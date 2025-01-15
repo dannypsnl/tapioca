@@ -64,7 +64,6 @@ impl<'a> Driver<'a> {
                 id,
                 params,
                 body,
-                returned,
             } => {
                 if let TypBody::Func {
                     params: ptys,
@@ -72,9 +71,7 @@ impl<'a> Driver<'a> {
                 } = &env.lookup(id, span).body
                 {
                     let mut statements = vec![];
-                    // TODO:
-                    for _e in body {}
-                    statements.push(Statement::Return(self.convert_expr(returned)));
+                    statements.push(Statement::Return(self.convert_expr(body)));
 
                     self.cfile.funcs.push(DefineFunc {
                         name: self.mangle_name(id),

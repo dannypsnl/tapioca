@@ -49,6 +49,25 @@ impl<'a> Environment<'a> {
             (Char, ExprBody::Char(_)) => (),
             (String, ExprBody::String(_)) => (),
 
+            (_, ExprBody::Begin(mids, returned)) => {
+                for middle_statement in mids {
+                    self.check(
+                        span,
+                        middle_statement,
+                        &TypBody::Void.with_span(span.clone()),
+                    );
+                }
+                self.check(span, returned, typ);
+            }
+
+            (_, ExprBody::Let(bindings, body)) => {
+                let mut env = self.derive();
+                for bind in bindings {
+                    env.insert(bind.name.clone(), self.infer(span, &bind.expr));
+                }
+                env.check(span, &body, typ);
+            }
+
             (_, _) => {
                 let actual = self.infer(span, exp);
                 self.unify(span, typ, &actual);
