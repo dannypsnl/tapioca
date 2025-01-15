@@ -9,7 +9,8 @@ mod type_system;
 use expander::expand_module;
 
 fn main() {
-    let module = expand_module("example/hello.ss").expect("expanding failed");
+    let root = std::path::Path::new("example");
+    let module = expand_module(root, "example/hello.ss").expect("expanding failed");
     let env = type_system::check(&module);
-    backend::compile(std::path::Path::new("example"), &env, &module);
+    backend::compile(root, &env, &module);
 }

@@ -6,4 +6,5 @@
 
 (: f : int int -> int)
 (define (f a b)
-  a)
+  (let ([b 2])
+    b))

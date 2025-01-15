@@ -141,11 +141,7 @@ impl<'a> Driver<'a> {
             ast::expr::ExprBody::Int(i) => CExpr::CInt(*i),
             ast::expr::ExprBody::Identifier(n) => CExpr::Id(n.clone()),
             ast::expr::ExprBody::Symbol(_) => todo!(),
-            ast::expr::ExprBody::App(_expr, _vec) => todo!(),
-            ast::expr::ExprBody::List(_vec) => todo!(),
-            ast::expr::ExprBody::Tuple(_vec) => todo!(),
-            ast::expr::ExprBody::Object(_vec) => todo!(),
-            ast::expr::ExprBody::Syntax(_expr) => todo!(),
+            _ => todo!(),
         }
     }
 }
