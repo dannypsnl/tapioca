@@ -108,9 +108,9 @@ impl Expander<'_> {
             &notation,
             List(vec![Id("define"), RestHole("rest")]),
         ) {
-            self.expand_defines(stack, &notation)?;
+            self.expand_define(stack, &notation)?;
         } else if ematch(&mut binds, &notation, List(vec![Id(":"), RestHole("rest")])) {
-            self.expand_claims(&notation)?;
+            self.expand_claim(&notation)?;
         } else if ematch(
             &mut binds,
             &notation,
@@ -140,7 +140,7 @@ impl Expander<'_> {
         Ok(())
     }
 
-    fn expand_claims(&mut self, notation: &ENotation) -> Result<(), error::Error> {
+    fn expand_claim(&mut self, notation: &ENotation) -> Result<(), error::Error> {
         let mut binds = MatchedResult::default();
         if ematch(
             &mut binds,
@@ -157,7 +157,7 @@ impl Expander<'_> {
         Ok(())
     }
 
-    fn expand_defines(
+    fn expand_define(
         &mut self,
         stack: &ScopeStack,
         notation: &ENotation,
@@ -199,12 +199,32 @@ impl Expander<'_> {
             &notation,
             List(vec![Id("define"), Hole("name"), Hole("expr")]),
         ) {
-            let typ = self.expand_expr(stack, binds.get_one("expr"));
-            self.module.define_forms.push(DefineForm::DefineConstant {
-                span: notation.span.clone().into(),
-                id: binds.get_one("name").to_string(),
-                expr: typ,
-            });
+            let expr = self.expand_expr(stack, binds.get_one("expr"));
+            match expr.body {
+                // This case is trivializing the immediately lambda, e.g.
+                //
+                // (define g
+                //   (lambda (a b)
+                //     b))
+                //
+                // will become
+                //
+                // (define (g a b)
+                //   b)
+                ExprBody::Lambda(params, body) => {
+                    self.module.define_forms.push(DefineForm::DefineFunction {
+                        span: notation.span.clone().into(),
+                        id: binds.get_one("name").to_string(),
+                        params,
+                        body: *body,
+                    })
+                }
+                _ => self.module.define_forms.push(DefineForm::DefineConstant {
+                    span: notation.span.clone().into(),
+                    id: binds.get_one("name").to_string(),
+                    expr,
+                }),
+            }
         } else {
             let span: ReportSpan = notation.span.clone().into();
             Report::build(ReportKind::Error, span.clone())

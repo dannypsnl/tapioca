@@ -8,3 +8,8 @@
 (define (f a b)
   (let ([b 2])
     b))
+
+(: g : int int -> int)
+(define g
+  (lambda (a b)
+    b))
