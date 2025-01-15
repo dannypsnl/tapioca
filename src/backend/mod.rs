@@ -52,7 +52,7 @@ impl<'a> Driver<'a> {
     fn compile_definition(&mut self, env: &Environment<'_>, def: &DefineForm) {
         match def {
             DefineForm::DefineConstant { span, id, expr } => {
-                let ty = env.lookup(&Identifier::origin(id.to_string()), span);
+                let ty = env.lookup(&Identifier::top_level(id.to_string()), span);
                 let name = self.mangle_name(id);
                 self.cfile.declares.push(Declare {
                     name: name.clone(),
@@ -69,7 +69,9 @@ impl<'a> Driver<'a> {
                 if let TypBody::Func {
                     params: ptys,
                     result,
-                } = &env.lookup(&Identifier::origin(id.to_string()), span).body
+                } = &env
+                    .lookup(&Identifier::top_level(id.to_string()), span)
+                    .body
                 {
                     self.cfile.funcs.push(DefineFunc {
                         name: self.mangle_name(id),
@@ -164,7 +166,7 @@ impl<'a> Driver<'a> {
             ast::expr::ExprBody::Rational(_, _) => todo!(),
             ast::expr::ExprBody::Float(_) => todo!(),
             ast::expr::ExprBody::Int(i) => CExpr::CInt(*i),
-            ast::expr::ExprBody::Identifier(id) => CExpr::Id(id.lookup_name.clone()),
+            ast::expr::ExprBody::Identifier(id) => CExpr::Id(id.lookup_name().clone()),
             ast::expr::ExprBody::Symbol(_) => todo!(),
             _ => todo!(),
         }

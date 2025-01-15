@@ -29,16 +29,32 @@ pub enum ExprBody {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Identifier {
-    pub origin_name: String,
-    pub lookup_name: String,
+pub enum Identifier {
+    Bind {
+        origin_name: String,
+        lookup_name: String,
+    },
+    // top-level will not be renamed, and hence just a single
+    TopLevel(String),
 }
 
 impl Identifier {
-    pub fn origin(name: String) -> Self {
-        Identifier {
-            origin_name: name.clone(),
-            lookup_name: name,
+    // construction
+    pub fn top_level(name: String) -> Self {
+        Identifier::TopLevel(name)
+    }
+
+    // access
+    pub fn info_name(&self) -> String {
+        match self {
+            Identifier::Bind { origin_name, .. } => origin_name.clone(),
+            Identifier::TopLevel(origin_name) => origin_name.clone(),
+        }
+    }
+    pub fn lookup_name(&self) -> &String {
+        match self {
+            Identifier::Bind { lookup_name, .. } => lookup_name,
+            Identifier::TopLevel(lookup_name) => lookup_name,
         }
     }
 }

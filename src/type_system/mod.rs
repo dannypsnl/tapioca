@@ -15,7 +15,7 @@ pub fn check(module: &Module) -> Environment {
                 env.check(
                     span,
                     expr,
-                    env.lookup(&Identifier::origin(id.to_string()), span),
+                    env.lookup(&Identifier::top_level(id.to_string()), span),
                 );
             }
             DefineForm::DefineFunction {
@@ -24,7 +24,7 @@ pub fn check(module: &Module) -> Environment {
                 params,
                 body,
             } => {
-                let ty = env.lookup(&Identifier::origin(id.to_string()), span);
+                let ty = env.lookup(&Identifier::top_level(id.to_string()), span);
                 match &ty.body {
                     TypBody::Func {
                         params: typs,

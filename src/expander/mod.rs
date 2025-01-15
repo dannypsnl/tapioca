@@ -483,7 +483,7 @@ impl Expander<'_> {
         if let Some(v) = self.rename_mapping.get(refname) {
             for (bind_scopes, new_name) in v {
                 if scopes.is_superset(bind_scopes) {
-                    return ExprBody::Identifier(expr::Identifier {
+                    return ExprBody::Identifier(expr::Identifier::Bind {
                         origin_name: refname.clone(),
                         lookup_name: new_name.clone(),
                     });

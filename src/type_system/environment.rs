@@ -106,14 +106,14 @@ impl<'a> Environment<'a> {
         self.current_scope.insert(id, typ);
     }
     pub fn lookup(&self, id: &expr::Identifier, span: &ReportSpan) -> &Typ {
-        match self.current_scope.get(&id.lookup_name) {
+        match self.current_scope.get(id.lookup_name()) {
             Some(ty) => ty,
             None => match self.parent {
                 Some(parent) => parent.lookup(id, span),
                 None => {
                     Report::build(ReportKind::Error, span.clone())
                         .with_code(3)
-                        .with_message(format!("`{}` has no type", id.origin_name.clone()))
+                        .with_message(format!("`{}` has no type", id.info_name()))
                         .finish()
                         .eprint(self.source.clone())
                         .unwrap();
