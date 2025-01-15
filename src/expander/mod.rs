@@ -35,9 +35,7 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
         .to_string();
     let input = std::fs::read_to_string(path).expect("failed to open file");
 
-    let mut output = ENotationParser::parse(Rule::file, input.as_str()).unwrap();
-    let mut efile = EFile::from_pest(&mut output)?;
-    efile.set_debug_file_name(filename);
+    let efile = read_efile(filename, input.as_str())?;
 
     let mut module = Module::new((filename.to_string(), Source::from(input)));
     let mut expander = Expander {
@@ -54,6 +52,13 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
     }
 
     Ok(module)
+}
+
+fn read_efile(filename: &str, input: &str) -> Result<EFile, error::Error> {
+    let mut output = ENotationParser::parse(Rule::file, input).unwrap();
+    let mut efile = EFile::from_pest(&mut output)?;
+    efile.set_debug_file_name(filename);
+    Ok(efile)
 }
 
 pub struct ScopeStack<'a> {
@@ -176,7 +181,7 @@ impl Expander<'_> {
             let mut params = vec![];
             for p in binds.get_many("params") {
                 let name = p.to_string();
-                self.insert(&name, stack.as_set(), name.clone());
+                self.insert_binding(&name, stack.as_set(), name.clone());
                 params.push(name);
             }
 
@@ -395,13 +400,19 @@ impl Expander<'_> {
                 RestHole("body"),
             ]),
         ) {
+            let stack = stack.extend(self.lambda_scope());
+
             let params = binds
                 .get_many("params")
                 .iter()
-                .map(|e| e.to_string())
+                .map(|e| {
+                    let name = e.to_string();
+                    let new_name = self.unique_name("lam", self.lambda_count, &name);
+                    self.insert_binding(&name, stack.as_set(), new_name.clone());
+                    new_name
+                })
                 .collect();
 
-            let stack = stack.extend(self.lambda_scope());
             let exprs = self.expand_many_expr(&stack, binds.get_many("body"));
 
             if let Some((last, many)) = exprs.split_last() {
@@ -434,8 +445,8 @@ impl Expander<'_> {
         let mut binds = MatchedResult::default();
         if ematch(&mut binds, notation, List(vec![Hole("name"), Hole("expr")])) {
             let name = binds.get_one("name").to_string();
-            let new_name = self.unique_name(&name);
-            self.insert(&name, stack.as_set(), new_name.clone());
+            let new_name = self.unique_name("let", self.let_count, &name);
+            self.insert_binding(&name, stack.as_set(), new_name.clone());
             let expr = self.expand_expr(stack.parent.unwrap(), binds.get_one("expr"));
             Binding {
                 name: new_name,
@@ -459,7 +470,7 @@ impl Expander<'_> {
             .unwrap();
     }
 
-    fn insert(&mut self, name: &String, scopes: HashSet<Scope>, new_name: String) {
+    fn insert_binding(&mut self, name: &String, scopes: HashSet<Scope>, new_name: String) {
         if !self.rename_mapping.contains_key(name) {
             self.rename_mapping.insert(name.clone(), VecDeque::new());
         }
@@ -468,9 +479,9 @@ impl Expander<'_> {
             .and_modify(|v| v.push_front((scopes, new_name)));
     }
 
-    fn unique_name(&self, name: &String) -> String {
+    fn unique_name(&self, prefix: &str, counter: u64, name: &String) -> String {
         // add an uninterned prefix
-        format!("#:{}", name)
+        format!("#:{}{}-{}", prefix, counter, name)
     }
 
     fn lookup_newname(&self, refname: &String, scopes: HashSet<Scope>) -> ExprBody {
@@ -491,7 +502,7 @@ impl Expander<'_> {
             }
         }
         panic!(
-            "failed to find any proper name {}, {:?}",
+            "failed to find any proper name `{}`, {:?}",
             refname, self.rename_mapping
         );
     }
