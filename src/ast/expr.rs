@@ -18,6 +18,7 @@ pub enum ExprBody {
 
     Let(Vec<Binding>, Box<Expr>),
 
+    Lambda(Vec<String>, Box<Expr>),
     App(Box<Expr>, Vec<Expr>),
 
     List(Vec<Expr>),
