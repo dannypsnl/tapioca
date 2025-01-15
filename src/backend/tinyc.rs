@@ -12,9 +12,18 @@ pub struct DefineFunc {
     pub name: String,
     pub params: Vec<(String, CTyp)>,
     pub result: CTyp,
-    pub statements: Vec<Statement>,
+    pub statement: CStmt,
 }
-pub enum Statement {
+pub enum CStmt {
+    Seq {
+        cur: CExpr,
+        next: Box<CStmt>,
+    },
+    Assign {
+        name: String,
+        expr: CExpr,
+        next: Box<CStmt>,
+    },
     Return(CExpr),
 }
 pub enum CExpr {
@@ -53,11 +62,20 @@ impl Display for CExpr {
         }
     }
 }
-impl Display for Statement {
+impl Display for CStmt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Statement::*;
+        use CStmt::*;
+        write!(f, "  ")?;
         match self {
-            Return(e) => write!(f, "return {}", e),
+            Return(e) => write!(f, "return {};", e),
+            Assign { name, expr, next } => {
+                writeln!(f, "{} = {};", name, expr)?;
+                write!(f, "{}", next)
+            }
+            Seq { cur, next } => {
+                writeln!(f, "{};", cur)?;
+                write!(f, "{}", next)
+            }
         }
     }
 }
@@ -72,9 +90,7 @@ impl Display for DefineFunc {
             }
         }
         writeln!(f, ") {{")?;
-        for stmt in &self.statements {
-            writeln!(f, "  {};", stmt)?;
-        }
+        writeln!(f, "{}", self.statement)?;
         write!(f, "}}")
     }
 }

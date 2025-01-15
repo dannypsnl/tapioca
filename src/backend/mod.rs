@@ -5,7 +5,7 @@ use crate::type_system::environment::Environment;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use tinyc::{CExpr, CFile, Declare, DefineFunc, Statement};
+use tinyc::{CExpr, CFile, CStmt, Declare, DefineFunc};
 
 pub mod tinyc;
 
@@ -71,9 +71,6 @@ impl<'a> Driver<'a> {
                     result,
                 } = &env.lookup(&Identifier::origin(id.to_string()), span).body
                 {
-                    let mut statements = vec![];
-                    statements.push(Statement::Return(self.convert_expr(body)));
-
                     self.cfile.funcs.push(DefineFunc {
                         name: self.mangle_name(id),
                         params: params
@@ -82,7 +79,7 @@ impl<'a> Driver<'a> {
                             .zip(ptys.iter().map(|t| self.convert_type(t)))
                             .collect(),
                         result: self.convert_type(&result),
-                        statements,
+                        statement: self.convert_cstmt(body),
                     });
                 } else {
                     panic!("internal error: a function has no function type")
@@ -93,6 +90,36 @@ impl<'a> Driver<'a> {
 
     fn mangle_name(&self, name: &String) -> String {
         format!("{}__{}", self.module_name, name)
+    }
+
+    fn convert_cstmt(&self, expr: &ast::expr::Expr) -> tinyc::CStmt {
+        match &expr.body {
+            ast::expr::ExprBody::Begin(es, expr) => {
+                let mut next = self.convert_cstmt(expr);
+                let mut eit = es.iter().rev();
+                while let Some(e) = eit.next() {
+                    next = CStmt::Seq {
+                        cur: self.convert_expr(e),
+                        next: Box::new(next),
+                    }
+                }
+                next
+            }
+            ast::expr::ExprBody::Let(binds, expr) => {
+                let mut next = self.convert_cstmt(expr);
+                let mut bit = binds.iter().rev();
+                while let Some(b) = bit.next() {
+                    next = CStmt::Assign {
+                        name: b.name.clone(),
+                        expr: self.convert_expr(&b.expr),
+                        next: Box::new(next),
+                    }
+                }
+                next
+            }
+
+            _ => CStmt::Return(self.convert_expr(expr)),
+        }
     }
 
     fn convert_type(&self, ty: &typ::Typ) -> tinyc::CTyp {
