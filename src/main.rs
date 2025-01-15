@@ -1,4 +1,5 @@
 #![feature(path_file_prefix)]
+#![feature(file_buffered)]
 mod ast;
 mod backend;
 mod error;

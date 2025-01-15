@@ -1,13 +1,9 @@
-(require a)
-(require b)
-(require c d e 1)
-
 (: x : i32)
 (define x 1)
 
-(: y : string)
+(: y : int)
 (define y 1)
 
 (: f : int int -> int)
 (define (f a b)
-  "abc")
+  a)

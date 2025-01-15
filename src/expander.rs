@@ -85,7 +85,6 @@ impl Module {
             List(vec![Id(":"), Hole("name"), Id(":"), RestHole("typ")]),
         ) {
             let typ = self.expand_type(notation.span.clone().into(), binds.get_many("typ"));
-            println!("{}", typ);
             self.claim_forms.push(ClaimForm {
                 id: binds.get_one("name").to_string(),
                 typ,
