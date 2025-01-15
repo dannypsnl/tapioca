@@ -15,7 +15,10 @@ use expr::Binding;
 use from_pest::FromPest;
 use pest::Parser;
 use scope::Scope;
-use std::{collections::HashSet, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 
 pub mod scope;
 
@@ -44,7 +47,7 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
     let mut expander = Expander {
         source: module.source.clone(),
         module: &mut module,
-        rename_mapping: vec![],
+        rename_mapping: Default::default(),
         let_count: 0,
         lambda_count: 0,
     };
@@ -90,7 +93,7 @@ struct Expander<'a> {
     /// 1. first one is the concrete name: e.g. x
     /// 2. second one is the scopes set, e.g. { let1, lambda1 }
     /// 3. thire one is the new name, e.g. #:x-let1
-    rename_mapping: Vec<(String, HashSet<Scope>, String)>,
+    rename_mapping: HashMap<String, Vec<(HashSet<Scope>, String)>>,
     /// status counter
     let_count: u64,
     lambda_count: u64,
@@ -461,7 +464,12 @@ impl Expander<'_> {
     }
 
     fn insert(&mut self, name: &String, scopes: HashSet<Scope>, new_name: String) {
-        self.rename_mapping.push((name.clone(), scopes, new_name));
+        if !self.rename_mapping.contains_key(name) {
+            self.rename_mapping.insert(name.clone(), vec![]);
+        }
+        self.rename_mapping
+            .entry(name.clone())
+            .and_modify(|v| v.push((scopes, new_name)));
     }
 
     fn unique_name(&self, name: &String) -> String {
@@ -476,15 +484,20 @@ impl Expander<'_> {
         //   (let ([b 1])
         //     b))
         // though we want `b` refers to **first match**, but this first match is from down to up view, not insert order, and hence the rename mapping should be lookup in reversed order.
-        for (name, bind_scopes, new_name) in self.rename_mapping.iter().rev() {
-            if name == refname && scopes.is_superset(bind_scopes) {
-                return ExprBody::Identifier(expr::Identifier {
-                    origin_name: name.clone(),
-                    lookup_name: new_name.clone(),
-                });
+        if let Some(v) = self.rename_mapping.get(refname) {
+            for (bind_scopes, new_name) in v {
+                if scopes.is_superset(bind_scopes) {
+                    return ExprBody::Identifier(expr::Identifier {
+                        origin_name: refname.clone(),
+                        lookup_name: new_name.clone(),
+                    });
+                }
             }
         }
-        panic!("failed to find any proper name {}", refname)
+        panic!(
+            "failed to find any proper name {}, {:?}",
+            refname, self.rename_mapping
+        );
     }
 
     fn let_scope(&mut self) -> Scope {
