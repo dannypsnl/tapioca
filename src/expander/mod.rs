@@ -376,13 +376,15 @@ impl Expander<'_> {
                 RestHole("body"),
             ]),
         ) {
-            let stack = stack.extend(self.lambda_scope());
             let params = binds
                 .get_many("params")
                 .iter()
                 .map(|e| e.to_string())
                 .collect();
+
+            let stack = stack.extend(self.lambda_scope());
             let exprs = self.expand_many_expr(&stack, binds.get_many("body"));
+
             if let Some((last, many)) = exprs.split_last() {
                 let body = ExprBody::Begin(many.into(), Box::new(last.clone()))
                     .with_span(last.span.clone());
@@ -390,6 +392,14 @@ impl Expander<'_> {
             } else {
                 panic!("let body cannot be empty")
             }
+        } else if ematch(&mut binds, list, List(vec![Hole("fn"), RestHole("args")])) {
+            let f = self.expand_expr(stack, binds.get_one("fn"));
+            let exprs = binds
+                .get_many("args")
+                .iter()
+                .map(|e| self.expand_expr(stack, e))
+                .collect();
+            ExprBody::App(Box::new(f), exprs).with_span(list.span.clone().into())
         } else {
             todo!()
         }
