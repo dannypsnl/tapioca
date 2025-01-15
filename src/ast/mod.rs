@@ -16,6 +16,18 @@ pub struct Module {
     pub other_forms: Vec<ENotation>,
 }
 
+impl Module {
+    pub fn new(source: (String, Source<String>)) -> Self {
+        Module {
+            source,
+            requires: vec![],
+            claim_forms: vec![],
+            define_forms: vec![],
+            other_forms: vec![],
+        }
+    }
+}
+
 impl Cache<String> for Module {
     type Storage = String;
 

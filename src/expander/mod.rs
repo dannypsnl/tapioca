@@ -3,13 +3,13 @@ use crate::ast::{
     typ::{Typ, TypBody},
     *,
 };
-use crate::matcher::{ematch, EPattern::*, MatchedResult};
+use crate::matcher::{EPattern::*, MatchedResult, ematch};
 use crate::{error, matcher};
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 use enotation::{
+    EFile, ENotation, ENotationBody, ENotationParser, Rule, SetDebugFileName,
     container::{self, Container},
     literal::{self, Literal},
-    EFile, ENotation, ENotationBody, ENotationParser, Rule, SetDebugFileName,
 };
 use expr::Binding;
 use from_pest::FromPest;
@@ -21,6 +21,8 @@ use std::{
 };
 
 pub mod scope;
+#[cfg(test)]
+mod tests;
 
 pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::Error> {
     let path: &Path = Path::new(filename);
@@ -37,13 +39,7 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
     let mut efile = EFile::from_pest(&mut output)?;
     efile.set_debug_file_name(filename);
 
-    let mut module = Module {
-        source: (filename.to_string(), Source::from(input)),
-        claim_forms: vec![],
-        define_forms: vec![],
-        other_forms: vec![],
-        requires: vec![],
-    };
+    let mut module = Module::new((filename.to_string(), Source::from(input)));
     let mut expander = Expander {
         source: module.source.clone(),
         module: &mut module,
