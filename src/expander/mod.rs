@@ -35,9 +35,7 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
         .to_string();
     let input = std::fs::read_to_string(path).expect("failed to open file");
 
-    let mut output = ENotationParser::parse(Rule::file, input.as_str()).unwrap();
-    let mut efile = EFile::from_pest(&mut output)?;
-    efile.set_debug_file_name(filename);
+    let efile = read_efile(filename, input.as_str())?;
 
     let mut module = Module::new((filename.to_string(), Source::from(input)));
     let mut expander = Expander {
@@ -54,6 +52,13 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
     }
 
     Ok(module)
+}
+
+fn read_efile(filename: &str, input: &str) -> Result<EFile, error::Error> {
+    let mut output = ENotationParser::parse(Rule::file, input).unwrap();
+    let mut efile = EFile::from_pest(&mut output)?;
+    efile.set_debug_file_name(filename);
+    Ok(efile)
 }
 
 pub struct ScopeStack<'a> {
