@@ -30,7 +30,7 @@ fn test_expander(module: &mut Module) -> Expander<'_> {
 }
 
 #[test]
-fn expander_1() {
+fn test_scopes_set_1() {
     let source: (String, Source<String>) = ("test.ss".to_string(), Source::from("".to_string()));
     let mut module = Module::new(source);
     let mut ex = test_expander(&mut module);
@@ -48,7 +48,7 @@ fn expander_1() {
 }
 
 #[test]
-fn expander_2() {
+fn test_scopes_set_2() {
     let source: (String, Source<String>) = ("test.ss".to_string(), Source::from("".to_string()));
     let mut module = Module::new(source);
     let mut ex = test_expander(&mut module);
