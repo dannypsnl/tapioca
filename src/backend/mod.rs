@@ -37,10 +37,14 @@ pub fn compile(root_path: &Path, env: &Environment<'_>, module: &ast::Module) {
     }
 
     let cpath = driver.module_path.with_extension("c");
+    let symbols = driver.module_path.with_extension("json");
     let output = Path::new("_build");
     std::fs::create_dir_all(output).expect("failed to create output directory");
     let mut f = File::create_buffered(output.join(cpath)).expect("failed to open output file");
     write!(&mut f, "{}", driver.cfile).expect("failed to write");
+
+    let mut f = File::create_buffered(output.join(symbols)).expect("failed to open symbols file");
+    write!(&mut f, "{}", env).expect("failed to write");
 }
 
 impl<'a> Driver<'a> {

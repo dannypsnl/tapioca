@@ -5,6 +5,7 @@ use crate::ast::{
 };
 use ariadne::{Label, Report, ReportKind};
 use std::collections::BTreeMap;
+use std::fmt;
 
 pub struct Environment<'a> {
     source: &'a Module,
@@ -109,5 +110,15 @@ impl<'a> Environment<'a> {
             current_scope: BTreeMap::new(),
             parent: None,
         }
+    }
+}
+
+impl<'a> fmt::Display for Environment<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(&self.current_scope).expect("failed to serialize")
+        )
     }
 }
