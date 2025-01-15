@@ -201,7 +201,7 @@ impl Expander<'_> {
         ) {
             let expr = self.expand_expr(stack, binds.get_one("expr"));
             match expr.body {
-                // This case is trivializing the immediately lambda, e.g.
+                // This case is trivializing the immediate lambda, e.g.
                 //
                 // (define g
                 //   (lambda (a b)
