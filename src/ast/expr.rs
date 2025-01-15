@@ -14,6 +14,8 @@ pub enum ExprBody {
     Identifier(String),
     Symbol(String),
 
+    Let(Vec<Binding>, Vec<Expr>),
+
     App(Box<Expr>, Vec<Expr>),
 
     List(Vec<Expr>),
@@ -21,6 +23,12 @@ pub enum ExprBody {
     Object(Vec<(String, Expr)>),
 
     Syntax(Box<Expr>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Binding {
+    pub name: String,
+    pub expr: Expr,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
