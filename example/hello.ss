@@ -4,6 +4,8 @@
 (: y : int)
 (define y 1)
 
+(define g (lambda (x) x))
+
 (: f : int int -> int)
 (define (f a b)
   (let ([b 2])
