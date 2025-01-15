@@ -82,7 +82,7 @@ fn test_define_forms() {
         ex.expand_top_level(&stack, notation).unwrap();
     }
 
-    assert_debug_snapshot!(module.define_forms[0], @r#"
+    assert_debug_snapshot!(module.define_forms[0], @r##"
     DefineFunction {
         span: ReportSpan {
             source: "test.ss",
@@ -91,7 +91,7 @@ fn test_define_forms() {
         },
         id: "g",
         params: [
-            "x",
+            "#:lam1-x",
         ],
         body: Expr {
             span: ReportSpan {
@@ -114,7 +114,7 @@ fn test_define_forms() {
             ),
         },
     }
-    "#);
+    "##);
 
     assert_debug_snapshot!(module.define_forms[1], @r#"
     DefineFunction {
