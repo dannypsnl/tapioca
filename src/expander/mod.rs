@@ -425,7 +425,10 @@ impl Expander<'_> {
         // though we want `b` refers to **first match**, but this first match is from down to up view, not insert order, and hence the rename mapping should be lookup in reversed order.
         for (name, bind_scopes, new_name) in self.rename_mapping.iter().rev() {
             if name == refname && scopes.is_superset(bind_scopes) {
-                return ExprBody::Identifier(new_name.clone());
+                return ExprBody::Identifier(expr::Identifier {
+                    origin_name: name.clone(),
+                    lookup_name: new_name.clone(),
+                });
             }
         }
         panic!("failed to find any proper name {}", refname)

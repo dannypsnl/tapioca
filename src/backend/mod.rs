@@ -1,3 +1,4 @@
+use crate::ast::expr::Identifier;
 use crate::ast::typ::{self, TypBody};
 use crate::ast::{self, DefineForm};
 use crate::type_system::environment::Environment;
@@ -51,7 +52,7 @@ impl<'a> Driver<'a> {
     fn compile_definition(&mut self, env: &Environment<'_>, def: &DefineForm) {
         match def {
             DefineForm::DefineConstant { span, id, expr } => {
-                let ty = env.lookup(id, span);
+                let ty = env.lookup(&Identifier::origin(id.to_string()), span);
                 let name = self.mangle_name(id);
                 self.cfile.declares.push(Declare {
                     name: name.clone(),
@@ -68,7 +69,7 @@ impl<'a> Driver<'a> {
                 if let TypBody::Func {
                     params: ptys,
                     result,
-                } = &env.lookup(id, span).body
+                } = &env.lookup(&Identifier::origin(id.to_string()), span).body
                 {
                     let mut statements = vec![];
                     statements.push(Statement::Return(self.convert_expr(body)));
@@ -136,7 +137,7 @@ impl<'a> Driver<'a> {
             ast::expr::ExprBody::Rational(_, _) => todo!(),
             ast::expr::ExprBody::Float(_) => todo!(),
             ast::expr::ExprBody::Int(i) => CExpr::CInt(*i),
-            ast::expr::ExprBody::Identifier(n) => CExpr::Id(n.clone()),
+            ast::expr::ExprBody::Identifier(id) => CExpr::Id(id.lookup_name.clone()),
             ast::expr::ExprBody::Symbol(_) => todo!(),
             _ => todo!(),
         }

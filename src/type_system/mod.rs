@@ -1,4 +1,4 @@
-use crate::ast::{DefineForm, Module, typ::TypBody};
+use crate::ast::{DefineForm, Module, expr::Identifier, typ::TypBody};
 use ariadne::{Report, ReportKind};
 use environment::Environment;
 
@@ -12,7 +12,11 @@ pub fn check(module: &Module) -> Environment {
     for def in &module.define_forms {
         match def {
             DefineForm::DefineConstant { span, id, expr } => {
-                env.check(span, expr, env.lookup(id, span));
+                env.check(
+                    span,
+                    expr,
+                    env.lookup(&Identifier::origin(id.to_string()), span),
+                );
             }
             DefineForm::DefineFunction {
                 span,
@@ -20,7 +24,7 @@ pub fn check(module: &Module) -> Environment {
                 params,
                 body,
             } => {
-                let ty = env.lookup(id, span);
+                let ty = env.lookup(&Identifier::origin(id.to_string()), span);
                 match &ty.body {
                     TypBody::Func {
                         params: typs,

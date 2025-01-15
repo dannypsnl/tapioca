@@ -11,7 +11,7 @@ pub enum ExprBody {
     Float(f64),
     Int(i64),
 
-    Identifier(String),
+    Identifier(Identifier),
     Symbol(String),
 
     Begin(Vec<Expr>, Box<Expr>),
@@ -25,6 +25,21 @@ pub enum ExprBody {
     Object(Vec<(String, Expr)>),
 
     Syntax(Box<Expr>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Identifier {
+    pub origin_name: String,
+    pub lookup_name: String,
+}
+
+impl Identifier {
+    pub fn origin(name: String) -> Self {
+        Identifier {
+            origin_name: name.clone(),
+            lookup_name: name,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

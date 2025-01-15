@@ -1,6 +1,6 @@
 use crate::ast::{
     Module, ReportSpan,
-    expr::{Expr, ExprBody},
+    expr::{self, Expr, ExprBody},
     typ::{Typ, TypBody},
 };
 use ariadne::{Label, Report, ReportKind};
@@ -105,15 +105,15 @@ impl<'a> Environment<'a> {
     pub fn insert(&mut self, id: String, typ: Typ) {
         self.current_scope.insert(id, typ);
     }
-    pub fn lookup(&self, id: &String, span: &ReportSpan) -> &Typ {
-        match self.current_scope.get(id) {
+    pub fn lookup(&self, id: &expr::Identifier, span: &ReportSpan) -> &Typ {
+        match self.current_scope.get(&id.lookup_name) {
             Some(ty) => ty,
             None => match self.parent {
                 Some(parent) => parent.lookup(id, span),
                 None => {
                     Report::build(ReportKind::Error, span.clone())
                         .with_code(3)
-                        .with_message(format!("`{}` has no type", id.clone()))
+                        .with_message(format!("`{}` has no type", id.origin_name.clone()))
                         .finish()
                         .eprint(self.source.clone())
                         .unwrap();
