@@ -15,7 +15,7 @@ use expr::Binding;
 use from_pest::FromPest;
 use pest::Parser;
 use scope::Scope;
-use std::{collections::HashSet, path::Path, thread::panicking, vec};
+use std::{collections::HashSet, path::Path};
 
 pub mod scope;
 
