@@ -42,8 +42,11 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
         requires: vec![],
     };
     let mut expander = Expander {
+        source: module.source.clone(),
         module: &mut module,
         rename_mapping: vec![],
+        let_count: 0,
+        lambda_count: 0,
     };
 
     let stack = ScopeStack::module(module_name);
@@ -57,24 +60,18 @@ pub fn expand_module(root_path: &Path, filename: &str) -> Result<Module, error::
 pub struct ScopeStack<'a> {
     parent: Option<&'a ScopeStack<'a>>,
     current_scope: Scope,
-    let_count: u64,
-    lambda_count: u64,
 }
 impl<'a> ScopeStack<'a> {
     fn module(module_name: String) -> Self {
         Self {
             parent: None,
             current_scope: Scope::Module(module_name),
-            let_count: 0,
-            lambda_count: 0,
         }
     }
-    fn extend_let(&'a self) -> Self {
+    fn extend(&'a self, s: Scope) -> Self {
         Self {
             parent: Some(self),
-            current_scope: Scope::Let(self.let_count),
-            let_count: self.let_count + 1,
-            lambda_count: self.lambda_count,
+            current_scope: s,
         }
     }
     fn as_set(&self) -> HashSet<Scope> {
@@ -89,10 +86,14 @@ impl<'a> ScopeStack<'a> {
 
 struct Expander<'a> {
     module: &'a mut Module,
+    source: (String, Source<String>),
     /// 1. first one is the concrete name: e.g. x
     /// 2. second one is the scopes set, e.g. { let1, lambda1 }
     /// 3. thire one is the new name, e.g. #:x-let1
     rename_mapping: Vec<(String, HashSet<Scope>, String)>,
+    /// status counter
+    let_count: u64,
+    lambda_count: u64,
 }
 
 impl Expander<'_> {
@@ -128,7 +129,7 @@ impl Expander<'_> {
                         .with_message("bad require")
                         .with_label(Label::new(span.clone()).with_message("Not an identifier"))
                         .finish()
-                        .eprint(self.module.clone())
+                        .eprint(self.source.clone())
                         .unwrap();
                 }
             }
@@ -211,7 +212,7 @@ impl Expander<'_> {
                 .with_message("bad define")
                 .with_label(Label::new(span.clone()))
                 .finish()
-                .eprint(self.module.clone())
+                .eprint(self.source.clone())
                 .unwrap();
             panic!("")
         }
@@ -223,7 +224,7 @@ impl Expander<'_> {
         if ns.len() == 0 {
             Report::build(ReportKind::Error, span.clone())
                 .finish()
-                .eprint(self.module.clone())
+                .eprint(self.source.clone())
                 .unwrap();
             panic!("")
         } else if ns.len() == 1 {
@@ -356,10 +357,10 @@ impl Expander<'_> {
                 RestHole("body"),
             ]),
         ) {
-            let stack = stack.extend_let();
-            let bs = self.expand_bindings(&stack, binds.get_many("bindings"));
+            let stack = stack.extend(self.let_scope());
+            let bindings = self.expand_bindings(&stack, binds.get_many("bindings"));
             let body = self.expand_many_expr(&stack, binds.get_many("body"));
-            ExprBody::Let(bs, body).with_span(list.span.clone().into())
+            ExprBody::Let(bindings, body).with_span(list.span.clone().into())
         } else {
             todo!()
         }
@@ -392,7 +393,7 @@ impl Expander<'_> {
             .with_message("bad form")
             .with_note(format!("{} form must ……", "match".fg(out)))
             .finish()
-            .eprint(self.module.clone())
+            .eprint(self.source.clone())
             .unwrap();
     }
 
@@ -418,5 +419,17 @@ impl Expander<'_> {
             }
         }
         panic!("failed to find any proper name {}", refname)
+    }
+
+    fn let_scope(&mut self) -> Scope {
+        let res = Scope::Let(self.let_count);
+        self.let_count += 1;
+        res
+    }
+    // TODO: use this
+    fn lambda_scope(&mut self) -> Scope {
+        let res = Scope::Lambda(self.lambda_count);
+        self.lambda_count += 1;
+        res
     }
 }
