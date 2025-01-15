@@ -3,20 +3,20 @@ use crate::ast::{
     typ::{Typ, TypBody},
     *,
 };
-use crate::matcher::{EPattern::*, MatchedResult, ematch};
+use crate::matcher::{ematch, EPattern::*, MatchedResult};
 use crate::{error, matcher};
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 use enotation::{
-    EFile, ENotation, ENotationBody, ENotationParser, Rule, SetDebugFileName,
     container::{self, Container},
     literal::{self, Literal},
+    EFile, ENotation, ENotationBody, ENotationParser, Rule, SetDebugFileName,
 };
 use expr::Binding;
 use from_pest::FromPest;
 use pest::Parser;
 use scope::Scope;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     path::Path,
 };
 
@@ -93,7 +93,7 @@ struct Expander<'a> {
     /// 1. first one is the concrete name: e.g. x
     /// 2. second one is the scopes set, e.g. { let1, lambda1 }
     /// 3. thire one is the new name, e.g. #:x-let1
-    rename_mapping: HashMap<String, Vec<(HashSet<Scope>, String)>>,
+    rename_mapping: HashMap<String, VecDeque<(HashSet<Scope>, String)>>,
     /// status counter
     let_count: u64,
     lambda_count: u64,
@@ -465,11 +465,11 @@ impl Expander<'_> {
 
     fn insert(&mut self, name: &String, scopes: HashSet<Scope>, new_name: String) {
         if !self.rename_mapping.contains_key(name) {
-            self.rename_mapping.insert(name.clone(), vec![]);
+            self.rename_mapping.insert(name.clone(), VecDeque::new());
         }
         self.rename_mapping
             .entry(name.clone())
-            .and_modify(|v| v.push((scopes, new_name)));
+            .and_modify(|v| v.push_front((scopes, new_name)));
     }
 
     fn unique_name(&self, name: &String) -> String {
@@ -505,7 +505,6 @@ impl Expander<'_> {
         self.let_count += 1;
         res
     }
-    // TODO: use this
     fn lambda_scope(&mut self) -> Scope {
         let res = Scope::Lambda(self.lambda_count);
         self.lambda_count += 1;
