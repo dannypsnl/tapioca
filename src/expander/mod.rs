@@ -3,8 +3,7 @@ use crate::ast::{
     typ::{Typ, TypBody},
     *,
 };
-use crate::matcher::{EPattern::*, MatchedResult, ematch};
-use crate::{error, matcher};
+use crate::error;
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 use enotation::{
     EFile, ENotation, ENotationBody, ENotationParser, Rule, SetDebugFileName,
@@ -13,6 +12,7 @@ use enotation::{
 };
 use expr::Binding;
 use from_pest::FromPest;
+use matcher::{EPattern::*, MatchedResult, ematch};
 use pest::Parser;
 use scope::Scope;
 use std::{
@@ -20,6 +20,7 @@ use std::{
     path::Path,
 };
 
+mod matcher;
 pub mod scope;
 #[cfg(test)]
 mod tests;

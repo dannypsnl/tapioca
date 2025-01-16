@@ -4,7 +4,6 @@ mod ast;
 mod backend;
 mod error;
 mod expander;
-mod matcher;
 mod type_system;
 use expander::expand_module;
 

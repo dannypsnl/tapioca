@@ -1,7 +1,6 @@
-use crate::matcher::MatchedResult;
-
 use super::EPattern::*;
 use super::Matched;
+use super::MatchedResult;
 use super::ematch;
 use enotation::{ENotation, ENotationParser, Rule};
 use from_pest::FromPest;
