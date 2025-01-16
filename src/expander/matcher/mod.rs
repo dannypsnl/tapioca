@@ -1,6 +1,9 @@
 use enotation::{ENotation, ENotationBody, container::*, literal::Literal};
 use std::collections::BTreeMap;
 
+#[cfg(test)]
+mod tests;
+
 pub enum EPattern<'a> {
     List(Vec<EPattern<'a>>),
     /// `Id` will match an exact same string
@@ -38,18 +41,70 @@ pub fn is_identifier(n: &ENotation) -> bool {
     }
 }
 
-pub struct MatchedResult {
+pub struct Matcher {
     binds: BTreeMap<String, Matched>,
 }
 
-impl Default for MatchedResult {
-    fn default() -> Self {
-        MatchedResult {
-            binds: BTreeMap::default(),
+impl Matcher {
+    pub fn ematch(&mut self, notation: &ENotation, pattern: EPattern) -> bool {
+        match (&notation.body, pattern) {
+            (_, Hole(name)) => {
+                self.insert(name.to_string(), notation.clone().into());
+                true
+            }
+            (enotation::ENotationBody::Container(container), pattern) => {
+                self.ematch_container(container, pattern)
+            }
+            (enotation::ENotationBody::Literal(literal), pattern) => {
+                self.ematch_literal(literal, pattern)
+            }
+            _ => todo!(),
+        }
+    }
+
+    fn ematch_container(&mut self, container: &Container, pattern: EPattern) -> bool {
+        match (container, pattern) {
+            (Container::List(list), EPattern::List(patterns)) => {
+                let mut notations = list.elems().into_iter().peekable();
+
+                for pat in patterns {
+                    match pat {
+                        RestHole(name) => {
+                            let rest = notations.map(|n| n.clone()).collect::<Vec<ENotation>>();
+                            self.insert(name.to_string(), rest.into());
+                            return true;
+                        }
+                        pat => {
+                            if let Some(notation) = notations.next() {
+                                if !self.ematch(notation, pat) {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                if notations.peek().is_some() {
+                    return false;
+                }
+
+                true
+            }
+            _ => false,
+        }
+    }
+
+    fn ematch_literal(&self, literal: &Literal, pattern: EPattern) -> bool {
+        match (literal, pattern) {
+            (Literal::Identifier(actual), Id(expected)) => actual.name == expected,
+            _ => false,
         }
     }
 }
-impl MatchedResult {
+
+impl Matcher {
     fn insert(&mut self, name: String, v: Matched) {
         self.binds.insert(name, v);
     }
@@ -74,62 +129,10 @@ impl MatchedResult {
     }
 }
 
-pub fn ematch(binds: &mut MatchedResult, notation: &ENotation, pattern: EPattern) -> bool {
-    match (&notation.body, pattern) {
-        (_, Hole(name)) => {
-            binds.insert(name.to_string(), notation.clone().into());
-            true
+impl Default for Matcher {
+    fn default() -> Self {
+        Matcher {
+            binds: BTreeMap::default(),
         }
-        (enotation::ENotationBody::Container(container), pattern) => {
-            ematch_container(binds, container, pattern)
-        }
-        (enotation::ENotationBody::Literal(literal), pattern) => {
-            ematch_literal(binds, literal, pattern)
-        }
-        _ => todo!(),
     }
 }
-
-fn ematch_container(binds: &mut MatchedResult, container: &Container, pattern: EPattern) -> bool {
-    match (container, pattern) {
-        (Container::List(list), EPattern::List(patterns)) => {
-            let mut notations = list.elems().into_iter().peekable();
-
-            for pat in patterns {
-                match pat {
-                    RestHole(name) => {
-                        let rest = notations.map(|n| n.clone()).collect::<Vec<ENotation>>();
-                        binds.insert(name.to_string(), rest.into());
-                        return true;
-                    }
-                    pat => {
-                        if let Some(notation) = notations.next() {
-                            if !ematch(binds, notation, pat) {
-                                return false;
-                            }
-                        } else {
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            if notations.peek().is_some() {
-                return false;
-            }
-
-            true
-        }
-        _ => false,
-    }
-}
-
-fn ematch_literal(_binds: &mut MatchedResult, literal: &Literal, pattern: EPattern) -> bool {
-    match (literal, pattern) {
-        (Literal::Identifier(actual), Id(expected)) => actual.name == expected,
-        _ => false,
-    }
-}
-
-#[cfg(test)]
-mod tests;

@@ -12,7 +12,7 @@ use enotation::{
 };
 use expr::Binding;
 use from_pest::FromPest;
-use matcher::{EPattern::*, MatchedResult, ematch};
+use matcher::{EPattern::*, Matcher};
 use pest::Parser;
 use scope::Scope;
 use std::{
@@ -107,21 +107,13 @@ impl Expander<'_> {
         stack: &ScopeStack,
         notation: ENotation,
     ) -> Result<(), error::Error> {
-        let mut binds = MatchedResult::default();
-        if ematch(
-            &mut binds,
-            &notation,
-            List(vec![Id("define"), RestHole("rest")]),
-        ) {
+        let mut matcher = Matcher::default();
+        if matcher.ematch(&notation, List(vec![Id("define"), RestHole("rest")])) {
             self.expand_define(stack, &notation)?;
-        } else if ematch(&mut binds, &notation, List(vec![Id(":"), RestHole("rest")])) {
+        } else if matcher.ematch(&notation, List(vec![Id(":"), RestHole("rest")])) {
             self.expand_claim(&notation)?;
-        } else if ematch(
-            &mut binds,
-            &notation,
-            List(vec![Id("require"), RestHole("module")]),
-        ) {
-            let requires = binds.get_many("module");
+        } else if matcher.ematch(&notation, List(vec![Id("require"), RestHole("module")])) {
+            let requires = matcher.get_many("module");
             for r in requires {
                 if matcher::is_identifier(r) {
                     self.module.requires.push(Require {
@@ -146,15 +138,14 @@ impl Expander<'_> {
     }
 
     fn expand_claim(&mut self, notation: &ENotation) -> Result<(), error::Error> {
-        let mut binds = MatchedResult::default();
-        if ematch(
-            &mut binds,
+        let mut matcher = Matcher::default();
+        if matcher.ematch(
             &notation,
             List(vec![Id(":"), Hole("name"), Id(":"), RestHole("typ")]),
         ) {
-            let typ = self.expand_type(notation.span.clone().into(), binds.get_many("typ"));
+            let typ = self.expand_type(notation.span.clone().into(), matcher.get_many("typ"));
             self.module.claim_forms.push(ClaimForm {
-                id: binds.get_one("name").to_string(),
+                id: matcher.get_one("name").to_string(),
                 typ,
             })
         }
@@ -167,9 +158,8 @@ impl Expander<'_> {
         stack: &ScopeStack,
         notation: &ENotation,
     ) -> Result<(), error::Error> {
-        let mut binds = MatchedResult::default();
-        if ematch(
-            &mut binds,
+        let mut matcher = Matcher::default();
+        if matcher.ematch(
             &notation,
             List(vec![
                 Id("define"),
@@ -177,10 +167,10 @@ impl Expander<'_> {
                 RestHole("body"),
             ]),
         ) {
-            let name = binds.get_one("name");
+            let name = matcher.get_one("name");
 
             let mut params = vec![];
-            for p in binds.get_many("params") {
+            for p in matcher.get_many("params") {
                 let name = p.to_string();
                 let id = expr::Identifier::top_level(name);
                 self.insert_binding(&id.info_name(), stack.as_set(), id.lookup_name().clone());
@@ -188,7 +178,7 @@ impl Expander<'_> {
             }
 
             let mut body = vec![];
-            for p in binds.get_many("body") {
+            for p in matcher.get_many("body") {
                 body.push(self.expand_expr(stack, p));
             }
             if let Some((returned, body)) = body.split_last() {
@@ -200,12 +190,11 @@ impl Expander<'_> {
                         .with_span(notation.span.clone().into()),
                 });
             }
-        } else if ematch(
-            &mut binds,
+        } else if matcher.ematch(
             &notation,
             List(vec![Id("define"), Hole("name"), Hole("expr")]),
         ) {
-            let expr = self.expand_expr(stack, binds.get_one("expr"));
+            let expr = self.expand_expr(stack, matcher.get_one("expr"));
             match expr.body {
                 // This case is trivializing the immediate lambda, e.g.
                 //
@@ -220,14 +209,14 @@ impl Expander<'_> {
                 ExprBody::Lambda(params, body) => {
                     self.module.define_forms.push(DefineForm::DefineFunction {
                         span: notation.span.clone().into(),
-                        id: binds.get_one("name").to_string(),
+                        id: matcher.get_one("name").to_string(),
                         params,
                         body: *body,
                     })
                 }
                 _ => self.module.define_forms.push(DefineForm::DefineConstant {
                     span: notation.span.clone().into(),
-                    id: binds.get_one("name").to_string(),
+                    id: matcher.get_one("name").to_string(),
                     expr,
                 }),
             }
@@ -259,7 +248,8 @@ impl Expander<'_> {
             let mut stack = vec![];
             let mut ns = ns.into_iter();
             while let Some(n) = ns.next() {
-                if ematch(&mut MatchedResult::default(), n, Id("->")) {
+                let mut matcher: Matcher = Default::default();
+                if matcher.ematch(n, Id("->")) {
                     return TypBody::Func {
                         params: stack,
                         result: self
@@ -301,13 +291,14 @@ impl Expander<'_> {
             ENotationBody::Container(Container::List(list)) => {
                 let mut ts = list.elems().into_iter();
                 let head = ts.next().unwrap();
-                if ematch(&mut MatchedResult::default(), head, Id("array")) {
+                let mut matcher = Matcher::default();
+                if matcher.ematch(head, Id("array")) {
                     let t = self.expand_one_type(ts.next().unwrap());
                     TypBody::Array(t.into()).with_span(span)
-                } else if ematch(&mut MatchedResult::default(), head, Id("list")) {
+                } else if matcher.ematch(head, Id("list")) {
                     let t = self.expand_one_type(ts.next().unwrap());
                     TypBody::Array(t.into()).with_span(span)
-                } else if ematch(&mut MatchedResult::default(), head, Id("tuple")) {
+                } else if matcher.ematch(head, Id("tuple")) {
                     let mut xs = vec![];
                     for t in ts {
                         xs.push(self.expand_one_type(t));
@@ -372,10 +363,8 @@ impl Expander<'_> {
     }
 
     fn expand_expr_form(&mut self, stack: &ScopeStack, list: &ENotation) -> Expr {
-        let mut binds = MatchedResult::default();
-
-        if ematch(
-            &mut binds,
+        let mut matcher = Matcher::default();
+        if matcher.ematch(
             list,
             List(vec![
                 Id("let"),
@@ -384,8 +373,8 @@ impl Expander<'_> {
             ]),
         ) {
             let stack = stack.extend(self.let_scope());
-            let bindings = self.expand_bindings(&stack, binds.get_many("bindings"));
-            let exprs = self.expand_many_expr(&stack, binds.get_many("body"));
+            let bindings = self.expand_bindings(&stack, matcher.get_many("bindings"));
+            let exprs = self.expand_many_expr(&stack, matcher.get_many("body"));
             if let Some((last, many)) = exprs.split_last() {
                 let body = ExprBody::Begin(many.into(), Box::new(last.clone()))
                     .with_span(last.span.clone());
@@ -393,8 +382,7 @@ impl Expander<'_> {
             } else {
                 panic!("let body cannot be empty")
             }
-        } else if ematch(
-            &mut binds,
+        } else if matcher.ematch(
             list,
             List(vec![
                 Id("lambda"),
@@ -404,7 +392,7 @@ impl Expander<'_> {
         ) {
             let stack = stack.extend(self.lambda_scope());
 
-            let params = binds
+            let params = matcher
                 .get_many("params")
                 .iter()
                 .map(|e| {
@@ -415,7 +403,7 @@ impl Expander<'_> {
                 })
                 .collect();
 
-            let exprs = self.expand_many_expr(&stack, binds.get_many("body"));
+            let exprs = self.expand_many_expr(&stack, matcher.get_many("body"));
 
             if let Some((last, many)) = exprs.split_last() {
                 let body = ExprBody::Begin(many.into(), Box::new(last.clone()))
@@ -424,9 +412,9 @@ impl Expander<'_> {
             } else {
                 panic!("let body cannot be empty")
             }
-        } else if ematch(&mut binds, list, List(vec![Hole("fn"), RestHole("args")])) {
-            let f = self.expand_expr(stack, binds.get_one("fn"));
-            let exprs = binds
+        } else if matcher.ematch(list, List(vec![Hole("fn"), RestHole("args")])) {
+            let f = self.expand_expr(stack, matcher.get_one("fn"));
+            let exprs = matcher
                 .get_many("args")
                 .iter()
                 .map(|e| self.expand_expr(stack, e))
@@ -444,12 +432,12 @@ impl Expander<'_> {
             .collect()
     }
     fn expand_binding(&mut self, stack: &ScopeStack, notation: &ENotation) -> Binding {
-        let mut binds = MatchedResult::default();
-        if ematch(&mut binds, notation, List(vec![Hole("name"), Hole("expr")])) {
-            let name = binds.get_one("name").to_string();
+        let mut matcher = Matcher::default();
+        if matcher.ematch(notation, List(vec![Hole("name"), Hole("expr")])) {
+            let name = matcher.get_one("name").to_string();
             let new_name = self.unique_name("let", self.let_count, &name);
             self.insert_binding(&name, stack.as_set(), new_name.clone());
-            let expr = self.expand_expr(stack.parent.unwrap(), binds.get_one("expr"));
+            let expr = self.expand_expr(stack.parent.unwrap(), matcher.get_one("expr"));
             Binding {
                 name: new_name,
                 expr,

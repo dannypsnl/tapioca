@@ -1,7 +1,6 @@
 use super::EPattern::*;
 use super::Matched;
-use super::MatchedResult;
-use super::ematch;
+use super::Matcher;
 use enotation::{ENotation, ENotationParser, Rule};
 use from_pest::FromPest;
 use insta::assert_snapshot;
@@ -13,13 +12,12 @@ fn notation(input: &str) -> ENotation {
     ENotation::from_pest(&mut output).unwrap()
 }
 
-struct DisplayVecENotation(Vec<(String, Matched)>);
-
-impl From<MatchedResult> for DisplayVecENotation {
-    fn from(result: MatchedResult) -> Self {
-        DisplayVecENotation(result.binds.into_iter().collect())
+impl Matcher {
+    fn show(self) -> DisplayVecENotation {
+        DisplayVecENotation(self.binds.into_iter().collect())
     }
 }
+struct DisplayVecENotation(Vec<(String, Matched)>);
 impl Display for DisplayVecENotation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (binder, ele) in &self.0 {
@@ -44,14 +42,13 @@ impl Display for DisplayVecENotation {
 
 #[test]
 fn match_define_form() {
-    let mut binds = MatchedResult::default();
-    let res = ematch(
-        &mut binds,
+    let mut matcher = Matcher::default();
+    let res = matcher.ematch(
         &notation("(define x 1)"),
         List(vec![Id("define"), Hole("name"), Hole("expr")]),
     );
     assert_eq!(res, true);
-    assert_snapshot!(Into::<DisplayVecENotation>::into(binds), @r"
+    assert_snapshot!(matcher.show(), @r"
     expr = 1
     name = x
     ");
@@ -59,9 +56,8 @@ fn match_define_form() {
 
 #[test]
 fn match_define_form_2() {
-    let mut binds = MatchedResult::default();
-    let res = ematch(
-        &mut binds,
+    let mut matcher = Matcher::default();
+    let res = matcher.ematch(
         &notation("(define x : i32 1)"),
         List(vec![
             Id("define"),
@@ -72,7 +68,7 @@ fn match_define_form_2() {
         ]),
     );
     assert_eq!(res, true);
-    assert_snapshot!(Into::<DisplayVecENotation>::into(binds), @r"
+    assert_snapshot!(matcher.show(), @r"
     expr = 1
     name = x
     type = i32
@@ -81,12 +77,11 @@ fn match_define_form_2() {
 
 #[test]
 fn match_define_form_3() {
-    let mut binds = MatchedResult::default();
-    let res = ematch(
-        &mut binds,
+    let mut matcher = Matcher::default();
+    let res = matcher.ematch(
         &notation("(define x : i32 1)"),
         List(vec![Id("define"), RestHole("rest")]),
     );
     assert_eq!(res, true);
-    assert_snapshot!(Into::<DisplayVecENotation>::into(binds), @"rest = (x : i32 1)");
+    assert_snapshot!(matcher.show(), @"rest = (x : i32 1)");
 }
