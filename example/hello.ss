@@ -8,7 +8,7 @@
 
 (: f : int int -> int)
 (define (f a b)
-  (let ([b 2])
+  (let ([b a])
     b))
 
 (: g : int int -> int)

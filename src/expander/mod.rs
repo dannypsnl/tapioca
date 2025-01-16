@@ -181,8 +181,9 @@ impl Expander<'_> {
             let mut params = vec![];
             for p in binds.get_many("params") {
                 let name = p.to_string();
-                self.insert_binding(&name, stack.as_set(), name.clone());
-                params.push(name);
+                let id = expr::Identifier::top_level(name);
+                self.insert_binding(&id.info_name(), stack.as_set(), id.lookup_name().clone());
+                params.push(id.lookup_name().clone());
             }
 
             let mut body = vec![];
