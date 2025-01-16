@@ -1,4 +1,8 @@
-use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+
+use serde::{Deserialize, Serialize, Serializer};
+
+use crate::expander::scope::Scope;
 
 use super::ReportSpan;
 
@@ -18,7 +22,7 @@ pub enum ExprBody {
 
     Let(Vec<Binding>, Box<Expr>),
 
-    Lambda(Vec<String>, Box<Expr>),
+    Lambda(Vec<Identifier>, Box<Expr>),
     App(Box<Expr>, Vec<Expr>),
 
     List(Vec<Expr>),
@@ -28,22 +32,42 @@ pub enum ExprBody {
     Syntax(Box<Expr>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Identifier {
-    Bind {
-        origin_name: String,
-        lookup_name: String,
+    // simple identifiers are those with module scope, which is no need to have complex structure
+    // e.g.
+    // 1. top-level
+    // 2. parameters of top-level function
+    Simple(String),
+    Normal {
+        written_name: String,
+        scope: HashSet<Scope>,
     },
-    // top-level will not be renamed, and hence just a single
-    TopLevel(String),
+}
+
+impl PartialOrd for Identifier {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.lookup_name().partial_cmp(&other.lookup_name())
+    }
+}
+impl Ord for Identifier {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
 
 impl Identifier {
     /// Constructs a name that not been renamed, usually they are
     /// 1. top-level definition
     /// 2. parameters in top-level `(define (f ……) ……)` form
-    pub fn top_level(name: String) -> Self {
-        Identifier::TopLevel(name)
+    pub fn simple(name: String) -> Self {
+        Identifier::Simple(name)
+    }
+    pub fn normal(written_name: String, scope: HashSet<Scope>) -> Self {
+        Identifier::Normal {
+            written_name,
+            scope,
+        }
     }
 
     /// Access to the programmer wrote done name, for example
@@ -65,22 +89,47 @@ impl Identifier {
     /// But for reporting, shouldn't report cannot find `x2` at all, because no programmers expect the error message is talking internal name from compiler.
     pub fn info_name(&self) -> String {
         match self {
-            Identifier::Bind { origin_name, .. } => origin_name.clone(),
-            Identifier::TopLevel(origin_name) => origin_name.clone(),
+            Identifier::Simple(origin_name) => origin_name.clone(),
+            Identifier::Normal { written_name, .. } => written_name.clone(),
         }
     }
     /// The internal name that use to lookup in type system (after expansion)
-    pub fn lookup_name(&self) -> &String {
+    pub fn lookup_name(&self) -> String {
         match self {
-            Identifier::Bind { lookup_name, .. } => lookup_name,
-            Identifier::TopLevel(lookup_name) => lookup_name,
+            Identifier::Simple(lookup_name) => lookup_name.clone(),
+            Identifier::Normal {
+                written_name,
+                scope,
+            } => {
+                if scope.len() == 0 {
+                    written_name.clone()
+                } else {
+                    // add an uninterned prefix `#:`
+                    let mut res = "#:".to_string();
+                    for s in scope {
+                        res.push_str(format!("{}", s).as_str());
+                    }
+                    res.push_str(format!("-{}", written_name).as_str());
+                    res
+                }
+            }
         }
+    }
+}
+
+// https://stackoverflow.com/questions/63846516/using-serde-json-to-serialise-maps-with-non-string-keys
+impl Serialize for Identifier {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("{}", self.lookup_name()))
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Binding {
-    pub name: String,
+    pub name: Identifier,
     pub expr: Expr,
 }
 

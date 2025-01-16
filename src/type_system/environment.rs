@@ -9,7 +9,7 @@ use std::fmt;
 
 pub struct Environment<'a> {
     source: &'a Module,
-    current_scope: BTreeMap<String, Typ>,
+    current_scope: BTreeMap<expr::Identifier, Typ>,
     parent: Option<&'a Environment<'a>>,
 }
 
@@ -102,11 +102,11 @@ impl<'a> Environment<'a> {
         derived.parent = Some(self);
         derived
     }
-    pub fn insert(&mut self, id: String, typ: Typ) {
+    pub fn insert(&mut self, id: expr::Identifier, typ: Typ) {
         self.current_scope.insert(id, typ);
     }
     pub fn lookup(&self, id: &expr::Identifier, span: &ReportSpan) -> &Typ {
-        match self.current_scope.get(id.lookup_name()) {
+        match self.current_scope.get(id) {
             Some(ty) => ty,
             None => match self.parent {
                 Some(parent) => parent.lookup(id, span),
@@ -117,7 +117,7 @@ impl<'a> Environment<'a> {
                         .finish()
                         .eprint(self.source.clone())
                         .unwrap();
-                    unreachable!()
+                    unreachable!("{:?}", self.current_scope)
                 }
             },
         }

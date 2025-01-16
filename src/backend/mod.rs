@@ -1,4 +1,3 @@
-use crate::ast::expr::Identifier;
 use crate::ast::typ::{self, TypBody};
 use crate::ast::{self, DefineForm};
 use crate::type_system::environment::Environment;
@@ -52,8 +51,8 @@ impl<'a> Driver<'a> {
     fn compile_definition(&mut self, env: &Environment<'_>, def: &DefineForm) {
         match def {
             DefineForm::DefineConstant { span, id, expr } => {
-                let ty = env.lookup(&Identifier::top_level(id.to_string()), span);
-                let name = self.mangle_name(id);
+                let ty = env.lookup(id, span);
+                let name = self.mangle_name(&id.lookup_name());
                 self.cfile.declares.push(Declare {
                     name: name.clone(),
                     typ: self.convert_type(ty),
@@ -69,15 +68,13 @@ impl<'a> Driver<'a> {
                 if let TypBody::Func {
                     params: ptys,
                     result,
-                } = &env
-                    .lookup(&Identifier::top_level(id.to_string()), span)
-                    .body
+                } = &env.lookup(id, span).body
                 {
                     self.cfile.funcs.push(DefineFunc {
-                        name: self.mangle_name(id),
+                        name: self.mangle_name(&id.lookup_name()),
                         params: params
                             .iter()
-                            .cloned()
+                            .map(|p| p.lookup_name())
                             .zip(ptys.iter().map(|t| self.convert_type(t)))
                             .collect(),
                         result: self.convert_type(&result),
@@ -112,7 +109,7 @@ impl<'a> Driver<'a> {
                 let mut bit = binds.iter().rev();
                 while let Some(b) = bit.next() {
                     next = CStmt::Assign {
-                        name: b.name.clone(),
+                        name: b.name.lookup_name().clone(),
                         expr: self.convert_expr(&b.expr),
                         next: Box::new(next),
                     }

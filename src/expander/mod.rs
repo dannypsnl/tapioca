@@ -10,7 +10,7 @@ use enotation::{
     container::{self, Container},
     literal::{self, Literal},
 };
-use expr::Binding;
+use expr::{Binding, Identifier};
 use from_pest::FromPest;
 use matcher::{EPattern::*, Matcher};
 use pest::Parser;
@@ -92,10 +92,12 @@ impl<'a> ScopeStack<'a> {
 struct Expander<'a> {
     module: &'a mut Module,
     source: (String, Source<String>),
-    /// 1. first one is the concrete name: e.g. x
-    /// 2. second one is the scopes set, e.g. { let1, lambda1 }
+    /// This is a mapping from
+    /// - written name: e.g. x
+    /// - to its scopes set, e.g. { let1, lambda1 }
+    ///
     /// 3. thire one is the new name, e.g. #:x-let1
-    rename_mapping: HashMap<String, VecDeque<(HashSet<Scope>, String)>>,
+    rename_mapping: HashMap<String, VecDeque<HashSet<Scope>>>,
     /// status counter
     let_count: u64,
     lambda_count: u64,
@@ -145,7 +147,7 @@ impl Expander<'_> {
         ) {
             let typ = self.expand_type(notation.span.clone().into(), matcher.get_many("typ"));
             self.module.claim_forms.push(ClaimForm {
-                id: matcher.get_one("name").to_string(),
+                id: Identifier::simple(matcher.get_one("name").to_string()),
                 typ,
             })
         }
@@ -172,9 +174,8 @@ impl Expander<'_> {
             let mut params = vec![];
             for p in matcher.get_many("params") {
                 let name = p.to_string();
-                let id = expr::Identifier::top_level(name);
-                self.insert_binding(&id.info_name(), stack.as_set(), id.lookup_name().clone());
-                params.push(id.lookup_name().clone());
+                let id = self.insert_binding(&name, stack.as_set());
+                params.push(id);
             }
 
             let mut body = vec![];
@@ -184,7 +185,7 @@ impl Expander<'_> {
             if let Some((returned, body)) = body.split_last() {
                 self.module.define_forms.push(DefineForm::DefineFunction {
                     span: notation.span.clone().into(),
-                    id: name.to_string(),
+                    id: Identifier::simple(name.to_string()),
                     params,
                     body: ExprBody::Begin(body.into(), Box::new(returned.clone()))
                         .with_span(notation.span.clone().into()),
@@ -209,14 +210,14 @@ impl Expander<'_> {
                 ExprBody::Lambda(params, body) => {
                     self.module.define_forms.push(DefineForm::DefineFunction {
                         span: notation.span.clone().into(),
-                        id: matcher.get_one("name").to_string(),
+                        id: Identifier::simple(matcher.get_one("name").to_string()),
                         params,
                         body: *body,
                     })
                 }
                 _ => self.module.define_forms.push(DefineForm::DefineConstant {
                     span: notation.span.clone().into(),
-                    id: matcher.get_one("name").to_string(),
+                    id: Identifier::simple(matcher.get_one("name").to_string()),
                     expr,
                 }),
             }
@@ -397,8 +398,7 @@ impl Expander<'_> {
                 .iter()
                 .map(|e| {
                     let name = e.to_string();
-                    let new_name = self.unique_name("lam", self.lambda_count, &name);
-                    self.insert_binding(&name, stack.as_set(), new_name.clone());
+                    let new_name = self.insert_binding(&name, stack.as_set());
                     new_name
                 })
                 .collect();
@@ -435,13 +435,9 @@ impl Expander<'_> {
         let mut matcher = Matcher::default();
         if matcher.ematch(notation, List(vec![Hole("name"), Hole("expr")])) {
             let name = matcher.get_one("name").to_string();
-            let new_name = self.unique_name("let", self.let_count, &name);
-            self.insert_binding(&name, stack.as_set(), new_name.clone());
+            let id = self.insert_binding(&name, stack.as_set());
             let expr = self.expand_expr(stack.parent.unwrap(), matcher.get_one("expr"));
-            Binding {
-                name: new_name,
-                expr,
-            }
+            Binding { name: id, expr }
         } else {
             self.bad_form(notation);
             panic!("bad form")
@@ -460,18 +456,15 @@ impl Expander<'_> {
             .unwrap();
     }
 
-    fn insert_binding(&mut self, name: &String, scopes: HashSet<Scope>, new_name: String) {
+    fn insert_binding(&mut self, name: &String, scopes: HashSet<Scope>) -> expr::Identifier {
         if !self.rename_mapping.contains_key(name) {
             self.rename_mapping.insert(name.clone(), VecDeque::new());
         }
         self.rename_mapping
             .entry(name.clone())
-            .and_modify(|v| v.push_front((scopes, new_name)));
-    }
+            .and_modify(|v| v.push_front(scopes.clone()));
 
-    fn unique_name(&self, prefix: &str, counter: u64, name: &String) -> String {
-        // add an uninterned prefix
-        format!("#:{}{}-{}", prefix, counter, name)
+        Identifier::normal(name.clone(), scopes)
     }
 
     fn lookup_newname(&self, refname: &String, scopes: HashSet<Scope>) -> ExprBody {
@@ -482,12 +475,12 @@ impl Expander<'_> {
         //     b))
         // though we want `b` refers to **first match**, but this first match is from down to up view, not insert order, and hence the rename mapping should be lookup in reversed order.
         if let Some(v) = self.rename_mapping.get(refname) {
-            for (bind_scopes, new_name) in v {
+            for bind_scopes in v {
                 if scopes.is_superset(bind_scopes) {
-                    return ExprBody::Identifier(expr::Identifier::Bind {
-                        origin_name: refname.clone(),
-                        lookup_name: new_name.clone(),
-                    });
+                    return ExprBody::Identifier(expr::Identifier::normal(
+                        refname.clone(),
+                        bind_scopes.clone(),
+                    ));
                 }
             }
         }

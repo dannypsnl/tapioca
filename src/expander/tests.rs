@@ -36,15 +36,15 @@ fn test_scopes_set_1() {
     let mut ex = test_expander(&mut module);
 
     let mut scopes = HashSet::new();
-    ex.insert_binding(&"b".to_string(), scopes.clone(), "b1".to_string());
+    ex.insert_binding(&"b".to_string(), scopes.clone());
     let outer_scopes = scopes.clone();
     scopes.insert(Scope::Let(0));
     let name = "a".to_string();
-    ex.insert_binding(&name, scopes.clone(), "a1".to_string());
+    ex.insert_binding(&name, scopes.clone());
     scopes.insert(Scope::Let(1));
-    ex.insert_binding(&name, scopes.clone(), "a2".to_string());
-    assert_snapshot!(ex.lookup_newname(&name, scopes.clone()), @"{origin: a, bind: a2}");
-    assert_snapshot!(ex.lookup_newname(&"b".to_string(), outer_scopes.clone()), @"{origin: b, bind: b1}");
+    ex.insert_binding(&name, scopes.clone());
+    assert_snapshot!(ex.lookup_newname(&name, scopes.clone()), @"{origin: a, bind: #:let_0let_1-a}");
+    assert_snapshot!(ex.lookup_newname(&"b".to_string(), outer_scopes.clone()), @"{origin: b, bind: b}");
 }
 
 #[test]
@@ -57,10 +57,10 @@ fn test_scopes_set_2() {
     scopes.insert(Scope::Let(0));
     let outer_scopes = scopes.clone();
     let name = "a".to_string();
-    ex.insert_binding(&name, scopes.clone(), "a1".to_string());
+    ex.insert_binding(&name, scopes.clone());
     scopes.insert(Scope::Let(1));
-    ex.insert_binding(&name, scopes.clone(), "a2".to_string());
-    assert_snapshot!(ex.lookup_newname(&name, outer_scopes.clone()), @"{origin: a, bind: a1}");
+    ex.insert_binding(&name, scopes.clone());
+    assert_snapshot!(ex.lookup_newname(&name, outer_scopes.clone()), @"{origin: a, bind: #:let_0-a}");
 }
 
 #[test]
@@ -82,16 +82,28 @@ fn test_define_forms() {
         ex.expand_top_level(&stack, notation).unwrap();
     }
 
-    assert_debug_snapshot!(module.define_forms[0], @r##"
+    assert_debug_snapshot!(module.define_forms[0], @r#"
     DefineFunction {
         span: ReportSpan {
             source: "test.ss",
             start_offset: 9,
             end_offset: 34,
         },
-        id: "g",
+        id: Simple(
+            "g",
+        ),
         params: [
-            "#:lam1-x",
+            Normal {
+                written_name: "x",
+                scope: {
+                    Lambda(
+                        0,
+                    ),
+                    Module(
+                        "test",
+                    ),
+                },
+            },
         ],
         body: Expr {
             span: ReportSpan {
@@ -114,7 +126,7 @@ fn test_define_forms() {
             ),
         },
     }
-    "##);
+    "#);
 
     assert_debug_snapshot!(module.define_forms[1], @r#"
     DefineFunction {
@@ -123,9 +135,18 @@ fn test_define_forms() {
             start_offset: 43,
             end_offset: 59,
         },
-        id: "f",
+        id: Simple(
+            "f",
+        ),
         params: [
-            "x",
+            Normal {
+                written_name: "x",
+                scope: {
+                    Module(
+                        "test",
+                    ),
+                },
+            },
         ],
         body: Expr {
             span: ReportSpan {
@@ -142,9 +163,13 @@ fn test_define_forms() {
                         end_offset: 58,
                     },
                     body: Identifier(
-                        Bind {
-                            origin_name: "x",
-                            lookup_name: "x",
+                        Normal {
+                            written_name: "x",
+                            scope: {
+                                Module(
+                                    "test",
+                                ),
+                            },
                         },
                     ),
                 },

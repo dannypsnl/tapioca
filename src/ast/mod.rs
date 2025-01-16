@@ -52,7 +52,7 @@ pub struct Require {
 pub struct ClaimForm {
     // (: x : int)
     // claims `x` has type `int`
-    pub id: String,
+    pub id: expr::Identifier,
     // TODO: normalize this to internal AST
     pub typ: Typ,
 }
@@ -65,7 +65,7 @@ pub enum DefineForm {
     // (define x <expr>)
     DefineConstant {
         span: ReportSpan,
-        id: String,
+        id: expr::Identifier,
         expr: Expr,
     },
     // (define (f x y z ...)
@@ -74,8 +74,8 @@ pub enum DefineForm {
     //   <body_k>)
     DefineFunction {
         span: ReportSpan,
-        id: String,
-        params: Vec<String>,
+        id: expr::Identifier,
+        params: Vec<expr::Identifier>,
         body: Expr,
     },
 }
