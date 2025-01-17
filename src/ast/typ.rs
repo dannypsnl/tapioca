@@ -21,9 +21,11 @@ pub enum TypBody {
     U64,
     Syntax,
     Void,
-    Array(Box<Typ>),
+    Vector(Box<Typ>),
+    // homogeneous list: (list t)
     List(Box<Typ>),
-    Tuple(Vec<Typ>),
+    // (pair a b)
+    Pair(Box<Typ>, Box<Typ>),
     Record(Vec<(String, Typ)>),
     Func { params: Vec<Typ>, result: Box<Typ> },
 }
@@ -72,19 +74,9 @@ impl Display for TypBody {
             U64 => write!(f, "u64"),
             Syntax => write!(f, "syntax"),
             Void => write!(f, "void"),
-            Array(typ) => write!(f, "(array {})", typ),
+            Vector(typ) => write!(f, "(array {})", typ),
             List(typ) => write!(f, "(list {})", typ),
-            Tuple(vec) => {
-                write!(f, "(tuple")?;
-                for (i, typ) in vec.iter().enumerate() {
-                    if i == 0 {
-                        write!(f, "{}", typ)?;
-                    } else {
-                        write!(f, " {}", typ)?;
-                    }
-                }
-                write!(f, ")")
-            }
+            Pair(a, b) => write!(f, "(pair {} {})", a, b),
             Record(_vec) => todo!(),
             Func { params, result } => {
                 for (i, typ) in params.iter().enumerate() {

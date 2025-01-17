@@ -293,18 +293,19 @@ impl Expander<'_> {
                 let mut ts = list.elems().into_iter();
                 let head = ts.next().unwrap();
                 let mut matcher = Matcher::default();
-                if matcher.ematch(head, Id("array")) {
+                if matcher.ematch(head, Id("vector")) {
                     let t = self.expand_one_type(ts.next().unwrap());
-                    TypBody::Array(t.into()).with_span(span)
+                    TypBody::Vector(t.into()).with_span(span)
                 } else if matcher.ematch(head, Id("list")) {
                     let t = self.expand_one_type(ts.next().unwrap());
-                    TypBody::Array(t.into()).with_span(span)
-                } else if matcher.ematch(head, Id("tuple")) {
-                    let mut xs = vec![];
-                    for t in ts {
-                        xs.push(self.expand_one_type(t));
-                    }
-                    TypBody::Tuple(xs).with_span(span)
+                    TypBody::List(t.into()).with_span(span)
+                } else if matcher.ematch(head, Id("pair")) {
+                    let a = ts.next().expect("no enough type for pair");
+                    let b = ts.next().expect("no enough type for pair");
+                    assert!(ts.is_empty(), "pair should exactly has two type arguments");
+                    let a = self.expand_one_type(a);
+                    let b = self.expand_one_type(b);
+                    TypBody::Pair(a.into(), b.into()).with_span(span)
                 } else {
                     todo!()
                 }
@@ -347,8 +348,8 @@ impl Expander<'_> {
 
             Container(container) => match container {
                 container::Container::List(_) => self.expand_expr_form(stack, notation),
-                container::Container::Set(_)
-                | container::Container::UnamedObject(_)
+                container::Container::Vector(_)
+                | container::Container::Set(_)
                 | container::Container::Object(_) => todo!(),
             },
 

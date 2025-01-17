@@ -26,7 +26,7 @@ pub enum ExprBody {
     App(Box<Expr>, Vec<Expr>),
 
     List(Vec<Expr>),
-    Tuple(Vec<Expr>),
+    Pair(Box<Expr>, Box<Expr>),
     Object(Vec<(String, Expr)>),
 
     Syntax(Box<Expr>),

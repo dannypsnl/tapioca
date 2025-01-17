@@ -144,9 +144,9 @@ impl<'a> Driver<'a> {
             TypBody::Rational => todo!(),
             TypBody::Float => todo!(),
             TypBody::Syntax => todo!(),
-            TypBody::Array(_typ) => todo!(),
+            TypBody::Vector(_typ) => todo!(),
             TypBody::List(_typ) => todo!(),
-            TypBody::Tuple(_vec) => todo!(),
+            TypBody::Pair(_a, _b) => todo!(),
             TypBody::Record(_vec) => todo!(),
             TypBody::Func {
                 params: _,

@@ -88,9 +88,11 @@ impl<'a> Environment<'a> {
             ExprBody::Symbol(_) => Symbol.with_span(typ_span.clone()),
             ExprBody::Syntax(_) => Syntax.with_span(typ_span.clone()),
             ExprBody::Identifier(id) => self.lookup(id, span).clone(),
-            ExprBody::Tuple(vec) => {
-                Tuple(vec.iter().map(|e| self.infer(span, e)).collect()).with_span(typ_span.clone())
-            }
+            ExprBody::Pair(a, b) => Pair(
+                Box::new(self.infer(&a.span, a)),
+                Box::new(self.infer(&b.span, b)),
+            )
+            .with_span(typ_span.clone()),
             _ => todo!(),
         }
     }
