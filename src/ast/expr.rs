@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -41,7 +41,7 @@ pub enum Identifier {
     Simple(String),
     Normal {
         written_name: String,
-        scope: HashSet<Scope>,
+        scopes: HashSet<Scope>,
     },
 }
 
@@ -63,10 +63,10 @@ impl Identifier {
     pub fn simple(name: String) -> Self {
         Identifier::Simple(name)
     }
-    pub fn normal(written_name: String, scope: HashSet<Scope>) -> Self {
+    pub fn normal(written_name: String, scopes: HashSet<Scope>) -> Self {
         Identifier::Normal {
             written_name,
-            scope,
+            scopes,
         }
     }
 
@@ -99,14 +99,14 @@ impl Identifier {
             Identifier::Simple(lookup_name) => lookup_name.clone(),
             Identifier::Normal {
                 written_name,
-                scope,
+                scopes,
             } => {
-                if scope.len() == 0 {
+                if scopes.is_empty() {
                     written_name.clone()
                 } else {
                     // add an uninterned prefix `#:`
                     let mut res = "#:".to_string();
-                    for s in scope {
+                    for s in scopes {
                         res.push_str(format!("{}", s).as_str());
                     }
                     res.push_str(format!("-{}", written_name).as_str());
@@ -124,6 +124,31 @@ impl Serialize for Identifier {
         S: Serializer,
     {
         serializer.serialize_str(&format!("{}", self.lookup_name()))
+    }
+}
+impl Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Identifier::Simple(name) => write!(f, "{}", name),
+            Identifier::Normal {
+                written_name,
+                scopes,
+            } => {
+                if scopes.is_empty() {
+                    write!(f, "{}", written_name)
+                } else {
+                    write!(f, "{}{{", written_name)?;
+                    for (i, s) in scopes.iter().enumerate() {
+                        if i == 0 {
+                            write!(f, "{}", s)?;
+                        } else {
+                            write!(f, ", {}", s)?;
+                        }
+                    }
+                    write!(f, "}}")
+                }
+            }
+        }
     }
 }
 

@@ -7,12 +7,7 @@ impl Display for ExprBody {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ExprBody::Identifier(identifier) => {
-                write!(
-                    f,
-                    "{{origin: {}, bind: {}}}",
-                    identifier.info_name(),
-                    identifier.lookup_name()
-                )
+                write!(f, "{}", identifier)
             }
             _ => unreachable!(),
         }
@@ -43,8 +38,8 @@ fn test_scopes_set_1() {
     ex.insert_binding(&name, scopes.clone());
     scopes.insert(Scope::Let(1));
     ex.insert_binding(&name, scopes.clone());
-    assert_snapshot!(ex.lookup_newname(&name, scopes.clone()), @"{origin: a, bind: #:let_0let_1-a}");
-    assert_snapshot!(ex.lookup_newname(&"b".to_string(), outer_scopes.clone()), @"{origin: b, bind: b}");
+    assert_snapshot!(ex.lookup_newname(&name, scopes.clone()), @"a{let_0, let_1}");
+    assert_snapshot!(ex.lookup_newname(&"b".to_string(), outer_scopes.clone()), @"b");
 }
 
 #[test]
@@ -60,7 +55,7 @@ fn test_scopes_set_2() {
     ex.insert_binding(&name, scopes.clone());
     scopes.insert(Scope::Let(1));
     ex.insert_binding(&name, scopes.clone());
-    assert_snapshot!(ex.lookup_newname(&name, outer_scopes.clone()), @"{origin: a, bind: #:let_0-a}");
+    assert_snapshot!(ex.lookup_newname(&name, outer_scopes.clone()), @"a{let_0}");
 }
 
 #[test]
@@ -95,12 +90,12 @@ fn test_define_forms() {
         params: [
             Normal {
                 written_name: "x",
-                scope: {
-                    Lambda(
-                        0,
-                    ),
+                scopes: {
                     Module(
                         "test",
+                    ),
+                    Lambda(
+                        0,
                     ),
                 },
             },
@@ -141,7 +136,7 @@ fn test_define_forms() {
         params: [
             Normal {
                 written_name: "x",
-                scope: {
+                scopes: {
                     Module(
                         "test",
                     ),
@@ -165,7 +160,7 @@ fn test_define_forms() {
                     body: Identifier(
                         Normal {
                             written_name: "x",
-                            scope: {
+                            scopes: {
                                 Module(
                                     "test",
                                 ),
