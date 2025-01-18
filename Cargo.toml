@@ -8,6 +8,7 @@ ariadne = { version = "0.5.0", features = ["auto-color"] }
 enotation = { git = "https://github.com/dannypsnl/enotation.git" }
 from-pest = "0.3.3"
 pest = "2.7.15"
+s2c = { version = "0.1.0", path = "../s2c" }
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
 serde_yaml = "0.9.34"
