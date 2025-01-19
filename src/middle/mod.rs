@@ -3,6 +3,65 @@ use std::collections::BTreeSet;
 
 pub mod ir;
 
+pub fn closure_conversion(e: expr::Expr) -> ir::Expr {
+    use ir::Expr::*;
+    use ir::LiftedLambda;
+    match e.body {
+        expr::ExprBody::Lambda(params, expr) => {
+            let freevars = free_variables(&expr);
+            Closure(
+                LiftedLambda::new(params, Box::new(replace_free(*expr, freevars.clone()))),
+                freevars,
+            )
+        }
+        // dummy recursive
+        expr::ExprBody::Begin(vec, expr) => todo!(),
+        expr::ExprBody::Let(vec, expr) => todo!(),
+        expr::ExprBody::App(expr, vec) => todo!(),
+        expr::ExprBody::List(vec) => todo!(),
+        expr::ExprBody::Pair(expr, expr1) => todo!(),
+        expr::ExprBody::Object(vec) => todo!(),
+        expr::ExprBody::Syntax(expr) => todo!(),
+        expr::ExprBody::Bool(_) => todo!(),
+        expr::ExprBody::Char(_) => todo!(),
+        expr::ExprBody::String(_) => todo!(),
+        expr::ExprBody::Rational(_, _) => todo!(),
+        expr::ExprBody::Float(_) => todo!(),
+        expr::ExprBody::Int(_) => todo!(),
+        expr::ExprBody::Identifier(identifier) => todo!(),
+        expr::ExprBody::Symbol(_) => todo!(),
+    }
+}
+
+fn replace_free(e: expr::Expr, freevars: BTreeSet<expr::Identifier>) -> ir::Expr {
+    use ir::Expr::*;
+    match &e.body {
+        expr::ExprBody::Identifier(id) => {
+            if freevars.contains(id) {
+                ClosureEnvGet(freevars.iter().position(|r| r == id).unwrap())
+            } else {
+                Identifier(id.clone())
+            }
+        }
+        // dummy recursive
+        expr::ExprBody::Bool(_) => todo!(),
+        expr::ExprBody::Char(_) => todo!(),
+        expr::ExprBody::String(_) => todo!(),
+        expr::ExprBody::Rational(_, _) => todo!(),
+        expr::ExprBody::Float(_) => todo!(),
+        expr::ExprBody::Int(_) => todo!(),
+        expr::ExprBody::Symbol(_) => todo!(),
+        expr::ExprBody::Begin(vec, expr) => todo!(),
+        expr::ExprBody::Let(vec, expr) => todo!(),
+        expr::ExprBody::Lambda(vec, expr) => todo!(),
+        expr::ExprBody::App(expr, vec) => todo!(),
+        expr::ExprBody::List(vec) => todo!(),
+        expr::ExprBody::Pair(expr, expr1) => todo!(),
+        expr::ExprBody::Object(vec) => todo!(),
+        expr::ExprBody::Syntax(expr) => todo!(),
+    }
+}
+
 fn free_variables(e: &expr::Expr) -> BTreeSet<expr::Identifier> {
     match &e.body {
         expr::ExprBody::Identifier(identifier) => {
