@@ -9,10 +9,17 @@ pub fn closure_conversion(e: expr::Expr) -> ir::Expr {
     match e.body {
         expr::ExprBody::Lambda(params, expr) => {
             let freevars = free_variables(&expr);
-            Closure(
-                LiftedLambda::new(params, Box::new(replace_free(*expr, &freevars))),
-                freevars,
-            )
+            if freevars.is_empty() {
+                Lam(LiftedLambda::new(
+                    params,
+                    Box::new(closure_conversion(*expr)),
+                ))
+            } else {
+                Closure(
+                    LiftedLambda::new(params, Box::new(replace_free(*expr, &freevars))),
+                    freevars,
+                )
+            }
         }
         // dummy recursive
         expr::ExprBody::Begin(vec, expr) => Begin(

@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 pub struct Module {}
 pub enum Expr {
     Closure(LiftedLambda, BTreeSet<expr::Identifier>),
+    Lam(LiftedLambda),
     ClosureEnvGet(usize),
     Identifier(expr::Identifier),
     Begin(Vec<Expr>, Box<Expr>),
