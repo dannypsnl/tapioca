@@ -15,6 +15,16 @@ pub enum EPattern<'a> {
 }
 use EPattern::*;
 
+impl From<&'static str> for EPattern<'_> {
+    fn from(value: &'static str) -> Self {
+        if value.ends_with('?') {
+            Hole(value.strip_suffix('?').unwrap())
+        } else {
+            Id(value)
+        }
+    }
+}
+
 pub enum Matched {
     One(ENotation),
     Many(Vec<ENotation>),

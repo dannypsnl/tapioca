@@ -22,6 +22,11 @@ pub fn closure_conversion(e: expr::Expr) -> ir::Expr {
             }
         }
         // dummy recursive
+        expr::ExprBody::If(c, t, e) => If(
+            Box::new(closure_conversion(*c)),
+            Box::new(closure_conversion(*t)),
+            Box::new(closure_conversion(*e)),
+        ),
         expr::ExprBody::Begin(vec, expr) => Begin(
             vec.into_iter().map(closure_conversion).collect(),
             Box::new(closure_conversion(*expr)),
@@ -75,6 +80,11 @@ fn replace_free(e: expr::Expr, freevars: &BTreeSet<expr::Identifier>) -> ir::Exp
             }
         }
         // dummy recursive
+        expr::ExprBody::If(c, t, e) => If(
+            Box::new(replace_free(*c, freevars)),
+            Box::new(replace_free(*t, freevars)),
+            Box::new(replace_free(*e, freevars)),
+        ),
         expr::ExprBody::Begin(vec, expr) => Begin(
             vec.into_iter().map(|e| replace_free(e, freevars)).collect(),
             Box::new(replace_free(*expr, freevars)),
@@ -129,6 +139,10 @@ fn free_variables(e: &expr::Expr) -> BTreeSet<expr::Identifier> {
             let mut set = BTreeSet::default();
             set.insert(identifier.clone());
             set
+        }
+
+        expr::ExprBody::If(c, t, e) => {
+            todo!()
         }
 
         expr::ExprBody::Let(binds, expr) => {

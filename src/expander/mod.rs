@@ -413,6 +413,19 @@ impl Expander<'_> {
             } else {
                 panic!("let body cannot be empty")
             }
+        } else if matcher.ematch(
+            list,
+            List(vec![
+                "if".into(),
+                "cond?".into(),
+                "then?".into(),
+                "else?".into(),
+            ]),
+        ) {
+            let c = self.expand_expr(stack, matcher.get_one("cond"));
+            let t = self.expand_expr(stack, matcher.get_one("then"));
+            let e = self.expand_expr(stack, matcher.get_one("else"));
+            ExprBody::If(Box::new(c), Box::new(t), Box::new(e)).with_span(list.span.clone().into())
         } else if matcher.ematch(list, List(vec![Hole("fn"), RestHole("args")])) {
             let f = self.expand_expr(stack, matcher.get_one("fn"));
             let exprs = matcher

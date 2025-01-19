@@ -8,6 +8,7 @@ pub enum Expr {
     ClosureEnvGet(usize),
     Identifier(expr::Identifier),
     Begin(Vec<Expr>, Box<Expr>),
+    If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let(Vec<Bind>, Box<Expr>),
     App(Box<Expr>, Vec<Expr>),
     List(Vec<Expr>),
