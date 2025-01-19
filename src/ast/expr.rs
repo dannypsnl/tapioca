@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::expander::scope::Scope;
 
-use super::ReportSpan;
+use super::{ReportSpan, typ::Typ};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ExprBody {
@@ -155,13 +155,20 @@ impl Display for Identifier {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Binding {
     pub name: Identifier,
+    pub typ: Typ,
     pub expr: Expr,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Expr {
-    pub span: ReportSpan,
+    span: ReportSpan,
     pub body: ExprBody,
+}
+
+impl Expr {
+    pub fn span(&self) -> ReportSpan {
+        self.span.clone()
+    }
 }
 
 impl ExprBody {

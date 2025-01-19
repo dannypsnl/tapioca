@@ -109,7 +109,7 @@ impl Matcher {
         self.binds.insert(name, v);
     }
 
-    pub fn get(&self, name: &String) -> &Matched {
+    fn get(&self, name: &String) -> &Matched {
         match self.binds.get(name) {
             Some(v) => v,
             None => panic!("no matched result {} be found", name),

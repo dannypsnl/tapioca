@@ -4,6 +4,9 @@ use std::fmt::Display;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum TypBody {
+    // unknown type is prepared for internal usage
+    Unknown,
+    // usual type
     Bool,
     Char,
     String,
@@ -57,6 +60,7 @@ impl Display for TypBody {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use TypBody::*;
         match self {
+            Unknown => write!(f, "<unknown>"),
             Bool => write!(f, "bool"),
             Char => write!(f, "char"),
             String => write!(f, "string"),

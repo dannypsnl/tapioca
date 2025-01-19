@@ -123,6 +123,7 @@ impl<'a> Driver<'a> {
 
     fn convert_type(&self, ty: &typ::Typ) -> tinyc::CTyp {
         match &ty.body {
+            TypBody::Unknown => panic!("internal error, unknown type has not been removed"),
             // stdbool.h
             TypBody::Bool => "bool".into(),
             TypBody::Char => "char".into(),

@@ -77,7 +77,7 @@ impl<'a> Environment<'a> {
 
     pub fn infer(&self, span: &ReportSpan, exp: &Expr) -> Typ {
         use TypBody::*;
-        let typ_span = exp.span.clone();
+        let typ_span = exp.span();
         match &exp.body {
             ExprBody::Bool(_) => Bool.with_span(typ_span.clone()),
             ExprBody::Char(_) => Char.with_span(typ_span.clone()),
@@ -89,8 +89,8 @@ impl<'a> Environment<'a> {
             ExprBody::Syntax(_) => Syntax.with_span(typ_span.clone()),
             ExprBody::Identifier(id) => self.lookup(id, span).clone(),
             ExprBody::Pair(a, b) => Pair(
-                Box::new(self.infer(&a.span, a)),
-                Box::new(self.infer(&b.span, b)),
+                Box::new(self.infer(&a.span(), a)),
+                Box::new(self.infer(&b.span(), b)),
             )
             .with_span(typ_span.clone()),
             _ => todo!(),

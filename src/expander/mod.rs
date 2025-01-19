@@ -378,8 +378,8 @@ impl Expander<'_> {
             let bindings = self.expand_bindings(&stack, matcher.get_many("bindings"));
             let exprs = self.expand_many_expr(&stack, matcher.get_many("body"));
             if let Some((last, many)) = exprs.split_last() {
-                let body = ExprBody::Begin(many.into(), Box::new(last.clone()))
-                    .with_span(last.span.clone());
+                let body =
+                    ExprBody::Begin(many.into(), Box::new(last.clone())).with_span(last.span());
                 ExprBody::Let(bindings, Box::new(body)).with_span(list.span.clone().into())
             } else {
                 panic!("let body cannot be empty")
@@ -407,8 +407,8 @@ impl Expander<'_> {
             let exprs = self.expand_many_expr(&stack, matcher.get_many("body"));
 
             if let Some((last, many)) = exprs.split_last() {
-                let body = ExprBody::Begin(many.into(), Box::new(last.clone()))
-                    .with_span(last.span.clone());
+                let body =
+                    ExprBody::Begin(many.into(), Box::new(last.clone())).with_span(last.span());
                 ExprBody::Lambda(params, Box::new(body)).with_span(list.span.clone().into())
             } else {
                 panic!("let body cannot be empty")
@@ -438,7 +438,24 @@ impl Expander<'_> {
             let name = matcher.get_one("name").to_string();
             let id = self.insert_binding(&name, stack.as_set());
             let expr = self.expand_expr(stack.parent.unwrap(), matcher.get_one("expr"));
-            Binding { name: id, expr }
+            Binding {
+                name: id,
+                typ: TypBody::Unknown.with_span(expr.span()),
+                expr,
+            }
+        } else if matcher.ematch(
+            notation,
+            List(vec![Hole("name"), Id(":"), Hole("typ"), Hole("expr")]),
+        ) {
+            let name = matcher.get_one("name").to_string();
+            let id = self.insert_binding(&name, stack.as_set());
+            let typ = self.expand_one_type(matcher.get_one("typ"));
+            let expr = self.expand_expr(stack.parent.unwrap(), matcher.get_one("expr"));
+            Binding {
+                name: id,
+                typ,
+                expr,
+            }
         } else {
             self.bad_form(notation);
             panic!("bad form")
