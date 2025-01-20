@@ -1,4 +1,7 @@
-use std::{collections::HashSet, fmt::Display};
+use std::{
+    collections::{BTreeSet, HashSet},
+    fmt::Display,
+};
 
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -14,22 +17,20 @@ pub enum ExprBody {
     Rational(i64, i64),
     Float(f64),
     Int(i64),
-
     Identifier(Identifier),
     Symbol(String),
-
     Begin(Vec<Expr>, Box<Expr>),
     Let(Vec<Binding>, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
-
     Lambda(Vec<Identifier>, Box<Expr>),
     App(Box<Expr>, Vec<Expr>),
-
     List(Vec<Expr>),
     Pair(Box<Expr>, Box<Expr>),
     Object(Vec<(String, Expr)>),
-
     Syntax(Box<Expr>),
+    // closure conversion
+    Closure(Box<Expr>, BTreeSet<Identifier>),
+    ClosureEnvGet(usize),
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
