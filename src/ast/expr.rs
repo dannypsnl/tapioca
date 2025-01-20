@@ -31,6 +31,8 @@ pub enum ExprBody {
     // closure conversion
     Closure(Box<Expr>, BTreeSet<Identifier>),
     ClosureEnvGet(usize),
+    // low-level let
+    Set(Identifier, Box<Expr>),
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]

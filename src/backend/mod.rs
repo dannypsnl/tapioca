@@ -1,3 +1,4 @@
+use crate::ast::expr::ExprBody;
 use crate::ast::typ::{self, TypBody};
 use crate::ast::{self, DefineForm};
 use crate::type_system::environment::Environment;
@@ -93,7 +94,7 @@ impl<'a> Driver<'a> {
 
     fn convert_cstmt(&self, expr: &ast::expr::Expr) -> tinyc::CStmt {
         match &expr.body {
-            ast::expr::ExprBody::Begin(es, expr) => {
+            ExprBody::Begin(es, expr) => {
                 let mut next = self.convert_cstmt(expr);
                 let mut eit = es.iter().rev();
                 while let Some(e) = eit.next() {
@@ -104,7 +105,7 @@ impl<'a> Driver<'a> {
                 }
                 next
             }
-            ast::expr::ExprBody::Let(binds, expr) => {
+            ExprBody::Let(binds, expr) => {
                 let mut next = self.convert_cstmt(expr);
                 let mut bit = binds.iter().rev();
                 while let Some(b) = bit.next() {
