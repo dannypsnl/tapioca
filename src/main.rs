@@ -8,8 +8,6 @@ mod error;
 mod expander;
 // type checking
 mod type_system;
-// middle contains IR and functional to C part
-mod middle;
 // backend is the final stage
 mod backend;
 
@@ -17,6 +15,5 @@ fn main() {
     let root = std::path::Path::new("example");
     let module = expander::expand_module(root, "example/hello.ss").expect("expanding failed");
     let env = type_system::check(&module);
-    let module = middle::middle_passes(&module);
     backend::compile(root, &env, &module);
 }
