@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeSet, HashSet},
-    fmt::Display,
-};
+use std::{collections::HashSet, fmt::Display};
 
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -28,11 +25,6 @@ pub enum ExprBody {
     Pair(Box<Expr>, Box<Expr>),
     Object(Vec<(String, Expr)>),
     Syntax(Box<Expr>),
-    // closure conversion
-    Closure(Box<Expr>, BTreeSet<Identifier>),
-    ClosureEnvGet(usize),
-    // low-level let
-    Set(Identifier, Box<Expr>),
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
