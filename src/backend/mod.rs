@@ -1,9 +1,7 @@
-use crate::ast::expr::ExprBody;
-use crate::ast::typ::{self, TypBody};
-use crate::ast::{self, DefineForm};
+use crate::ast;
 use crate::type_system::environment::Environment;
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::path::Path;
 
 pub mod chez;
