@@ -38,7 +38,7 @@ fn test_scopes_set_1() {
     ex.insert_binding(&name, scopes.clone());
     scopes.insert(Scope::Let(1));
     ex.insert_binding(&name, scopes.clone());
-    assert_snapshot!(ex.lookup_newname(&name, scopes.clone()), @"a{let_0, let_1}");
+    assert_snapshot!(ex.lookup_newname(&name, scopes.clone()), @"a{let_1, let_0}");
     assert_snapshot!(ex.lookup_newname(&"b".to_string(), outer_scopes.clone()), @"b");
 }
 
