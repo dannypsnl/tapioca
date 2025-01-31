@@ -134,6 +134,8 @@ impl<'a> Environment<'a> {
     }
 }
 
+/// NOTE: This Display is used to provide export json file for each module.
+/// Therefore, do not rewrite it for debugging purpose
 impl<'a> fmt::Display for Environment<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
