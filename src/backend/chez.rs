@@ -15,10 +15,7 @@ pub fn schemify(f: &mut BufWriter<File>, def: &DefineForm) -> io::Result<()> {
             write!(f, "(define {} {})", id.info_name(), expr)?;
         }
         DefineForm::DefineFunction {
-            span,
-            id,
-            params,
-            body,
+            id, params, body, ..
         } => {
             write!(f, "(define ({} ", id)?;
             for p in params {

@@ -1,8 +1,7 @@
-use std::collections::{BTreeSet, HashSet};
-
 use crate::ast::{DefineForm, Module, ReportSpan, expr::Identifier, typ::TypBody};
 use ariadne::{Report, ReportKind};
 use environment::Environment;
+use std::collections::BTreeSet;
 
 pub mod environment;
 
