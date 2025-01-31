@@ -4,7 +4,10 @@ use std::{
     io::{self, BufWriter, Write},
 };
 
-use crate::ast::{DefineForm, expr::Expr};
+use crate::ast::{
+    DefineForm,
+    expr::{self, Expr},
+};
 
 pub fn schemify(f: &mut BufWriter<File>, def: &DefineForm) -> io::Result<()> {
     match def {
@@ -30,41 +33,43 @@ pub fn schemify(f: &mut BufWriter<File>, def: &DefineForm) -> io::Result<()> {
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.body {
-            crate::ast::expr::ExprBody::Bool(t) => {
+            expr::ExprBody::Bool(t) => {
                 if *t {
                     write!(f, "#t")
                 } else {
                     write!(f, "#f")
                 }
             }
-            crate::ast::expr::ExprBody::Char(c) => match c {
+            expr::ExprBody::Char(c) => match c {
                 ' ' => write!(f, "#\\space"),
                 '\t' => write!(f, "#\\tab"),
                 '\r' => write!(f, "#\\return"),
                 '\n' => write!(f, "#\\newline"),
                 c => write!(f, "#\\{}", c),
             },
-            crate::ast::expr::ExprBody::String(s) => write!(f, "\"{}\"", s),
-            crate::ast::expr::ExprBody::Rational(p, q) => write!(f, "{}/{}", p, q),
-            crate::ast::expr::ExprBody::Float(v) => write!(f, "{}", v),
-            crate::ast::expr::ExprBody::Int(i) => write!(f, "{}", i),
-            crate::ast::expr::ExprBody::Identifier(id) => write!(f, "{}", id.info_name()),
-            crate::ast::expr::ExprBody::Symbol(x) => write!(f, "{}", x),
-            crate::ast::expr::ExprBody::Begin(bodys, body) => {
+            expr::ExprBody::String(s) => write!(f, "\"{}\"", s),
+            expr::ExprBody::Rational(p, q) => write!(f, "{}/{}", p, q),
+            expr::ExprBody::Float(v) => write!(f, "{}", v),
+            expr::ExprBody::Int(i) => write!(f, "{}", i),
+            expr::ExprBody::Identifier(id) => write!(f, "{}", id.info_name()),
+            expr::ExprBody::Symbol(x) => write!(f, "{}", x),
+            expr::ExprBody::Begin(bodys, body) => {
                 for b in bodys {
                     write!(f, "{}", b)?;
                 }
                 write!(f, "{}", body)
             }
-            crate::ast::expr::ExprBody::Let(bindings, body) => {
+            expr::ExprBody::Let(bindings, body) => {
                 write!(f, "(let (")?;
                 for bind in bindings {
                     write!(f, "[{} {}]", bind.name.info_name(), bind.expr)?;
                 }
                 write!(f, ") {})", body)
             }
-            crate::ast::expr::ExprBody::If(expr, expr1, expr2) => todo!(),
-            crate::ast::expr::ExprBody::Lambda(params, body) => {
+            expr::ExprBody::If(c, t, e) => {
+                write!(f, "(if {} {} {})", c, t, e)
+            }
+            expr::ExprBody::Lambda(params, body) => {
                 write!(f, "(lambda (")?;
                 for p in params {
                     write!(f, "{} ", p.info_name())?;
@@ -72,11 +77,23 @@ impl Display for Expr {
                 write!(f, ")")?;
                 write!(f, "{})", body)
             }
-            crate::ast::expr::ExprBody::App(expr, exprs) => todo!(),
-            crate::ast::expr::ExprBody::List(exprs) => todo!(),
-            crate::ast::expr::ExprBody::Pair(expr, expr1) => todo!(),
-            crate::ast::expr::ExprBody::Object(items) => todo!(),
-            crate::ast::expr::ExprBody::Syntax(expr) => todo!(),
+            expr::ExprBody::App(func, args) => {
+                write!(f, "({}", func)?;
+                for a in args {
+                    write!(f, " {}", a)?;
+                }
+                write!(f, ")")
+            }
+            expr::ExprBody::List(args) => {
+                write!(f, "(list")?;
+                for a in args {
+                    write!(f, " {}", a)?;
+                }
+                write!(f, ")")
+            }
+            expr::ExprBody::Pair(a, b) => write!(f, "(cons {} {})", a, b),
+            expr::ExprBody::Syntax(expr) => write!(f, "#'{}", expr),
+            expr::ExprBody::Object(_) => todo!(),
         }
     }
 }
