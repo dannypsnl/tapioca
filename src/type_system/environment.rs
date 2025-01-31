@@ -134,6 +134,12 @@ impl<'a> Environment<'a> {
     }
 }
 
+impl<'a> Environment<'a> {
+    pub fn symbols(&self) -> Vec<expr::Identifier> {
+        self.current_scope.keys().cloned().collect()
+    }
+}
+
 /// NOTE: This Display is used to provide export json file for each module.
 /// Therefore, do not rewrite it for debugging purpose
 impl<'a> fmt::Display for Environment<'a> {

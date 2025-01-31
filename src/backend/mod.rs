@@ -39,7 +39,15 @@ pub fn compile(
         }
         Mode::Library => {
             write!(&mut f, "(library ({})", module_name)?;
-            write!(&mut f, "(export )")?;
+            write!(
+                &mut f,
+                "(export {})",
+                env.symbols()
+                    .iter()
+                    .map(|id| id.info_name())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            )?;
             write!(&mut f, "(import (chezscheme))")?;
             for def in &module.define_forms {
                 chez::schemify(&mut f, def)?;
@@ -48,9 +56,14 @@ pub fn compile(
         }
     }
 
+    export_symbols(env, module_path, output)?;
+
+    Ok(())
+}
+
+fn export_symbols(env: &Environment<'_>, module_path: &Path, output: &Path) -> io::Result<()> {
     let symbols = module_path.with_extension("json");
     let mut f = File::create_buffered(output.join(symbols)).expect("failed to open symbols file");
     write!(&mut f, "{}", env)?;
-
     Ok(())
 }
