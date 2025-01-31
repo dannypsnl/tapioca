@@ -15,5 +15,6 @@ fn main() {
     let root = std::path::Path::new("example");
     let module = expander::expand_module(root, "example/hello.ss").expect("expanding failed");
     let env = type_system::check(&module);
-    backend::compile(root, &env, &module, backend::Mode::Program);
+    backend::compile(root, &env, &module, backend::Mode::Library)
+        .expect("failed to produce scheme file");
 }

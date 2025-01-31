@@ -1,10 +1,14 @@
-use crate::ast::{DefineForm, Module, typ::TypBody};
+use std::collections::{BTreeSet, HashSet};
+
+use crate::ast::{DefineForm, Module, ReportSpan, expr::Identifier, typ::TypBody};
 use ariadne::{Report, ReportKind};
 use environment::Environment;
 
 pub mod environment;
 
 pub fn check(module: &Module) -> Environment {
+    let mut top_definitions: BTreeSet<Identifier> = Default::default();
+
     let mut env = environment::Environment::new(&module);
     for claim in &module.claim_forms {
         env.insert(claim.id.clone(), claim.typ.clone());
@@ -12,6 +16,8 @@ pub fn check(module: &Module) -> Environment {
     for def in &module.define_forms {
         match def {
             DefineForm::DefineConstant { span, id, expr } => {
+                check_redefine(&mut top_definitions, id, span, &module);
+
                 env.check(span, expr, env.lookup(id, span));
             }
             DefineForm::DefineFunction {
@@ -20,6 +26,8 @@ pub fn check(module: &Module) -> Environment {
                 params,
                 body,
             } => {
+                check_redefine(&mut top_definitions, id, span, &module);
+
                 let ty = env.lookup(id, span);
                 match &ty.body {
                     TypBody::Func {
@@ -50,4 +58,23 @@ pub fn check(module: &Module) -> Environment {
     }
 
     env
+}
+
+fn check_redefine(
+    top_definitions: &mut BTreeSet<Identifier>,
+    id: &Identifier,
+    span: &ReportSpan,
+    module: &Module,
+) {
+    if top_definitions.contains(id) {
+        Report::build(ReportKind::Error, span.clone())
+            .with_code(1)
+            .with_message(format!("`{}` is redefined", id.info_name()))
+            .finish()
+            .eprint(module.clone())
+            .unwrap();
+        panic!();
+    }
+
+    top_definitions.insert(id.clone());
 }

@@ -1,22 +1,22 @@
 use crate::ast;
 use crate::type_system::environment::Environment;
 use std::fs::File;
-use std::io::Write;
+use std::io::{self, Write};
 use std::path::Path;
 
 pub mod chez;
-
-struct Driver<'a> {
-    module_path: &'a Path,
-    module_name: String,
-}
 
 pub enum Mode {
     Program,
     Library,
 }
 
-pub fn compile(root_path: &Path, env: &Environment<'_>, module: &ast::Module, mode: Mode) {
+pub fn compile(
+    root_path: &Path,
+    env: &Environment<'_>,
+    module: &ast::Module,
+    mode: Mode,
+) -> io::Result<()> {
     let raw_path: &Path = Path::new(&module.source.0);
     let module_path = raw_path.strip_prefix(root_path).unwrap();
     let module_name: String = module_path
@@ -26,12 +26,7 @@ pub fn compile(root_path: &Path, env: &Environment<'_>, module: &ast::Module, mo
         .unwrap()
         .to_string();
 
-    let driver = Driver {
-        module_path,
-        module_name,
-    };
-
-    let ss_path = driver.module_path.with_extension("ss");
+    let ss_path = module_path.with_extension("ss");
     let output = Path::new("_build");
     std::fs::create_dir_all(output).expect("failed to create output directory");
     let mut f = File::create_buffered(output.join(ss_path)).expect("failed to open output file");
@@ -39,19 +34,23 @@ pub fn compile(root_path: &Path, env: &Environment<'_>, module: &ast::Module, mo
     match mode {
         Mode::Program => {
             for def in &module.define_forms {
-                chez::schemify(&mut f, def).expect("failed to produce scheme file");
+                chez::schemify(&mut f, def)?;
             }
         }
         Mode::Library => {
-            write!(&mut f, "(library {}", driver.module_name).expect("msg");
+            write!(&mut f, "(library ({})", module_name)?;
+            write!(&mut f, "(export )")?;
+            write!(&mut f, "(import (chezscheme))")?;
             for def in &module.define_forms {
-                chez::schemify(&mut f, def).expect("failed to produce scheme file");
+                chez::schemify(&mut f, def)?;
             }
-            write!(&mut f, ")").expect("msg");
+            write!(&mut f, ")")?;
         }
     }
 
-    let symbols = driver.module_path.with_extension("json");
+    let symbols = module_path.with_extension("json");
     let mut f = File::create_buffered(output.join(symbols)).expect("failed to open symbols file");
-    write!(&mut f, "{}", env).expect("failed to write");
+    write!(&mut f, "{}", env)?;
+
+    Ok(())
 }
