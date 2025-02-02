@@ -71,9 +71,27 @@ let%expect_test "identifier" =
   [%expect {| x |}]
 ;;
 
-let%expect_test "identifier" =
+let%expect_test "identifier weird" =
   print_string @@ [%show: ENotation.notation] @@ parse_single "#%x";
   [%expect {| #%x |}]
+;;
+
+(* NOTE: `.` is not valid anymore, we preserve it for object accessing, therefore, the test case is a bit different from usual scheme *)
+let%expect_test "identifier obsure" =
+  print_string
+  @@ [%show: ENotation.notation]
+  @@ parse_single "obscure-name-!$%^&*-_=+<>/?";
+  [%expect {| obscure-name-!$%^&*-_=+<>/? |}]
+;;
+
+let%expect_test "identifier 漢字" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "世界";
+  [%expect {| 世界 |}]
+;;
+
+let%expect_test "identifier 日文" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "本好きの下剋上";
+  [%expect {| 本好きの下剋上 |}]
 ;;
 
 let%expect_test "boolean true" =
