@@ -25,6 +25,7 @@
   ocamlformat
   ppxlib
   ppx_deriving
+  sedlex
   cmdliner
   eio
   eio_main

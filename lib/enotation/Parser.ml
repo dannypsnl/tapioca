@@ -38,15 +38,19 @@ let notations () : ENotation.notation list =
 
 let rec tokens filename lexbuf =
   let tok = Lexer.token lexbuf in
-  let loc = Asai.Range.of_lexbuf ~source:(`File filename) lexbuf in
+  let loc =
+    Asai.Range.of_lex_range
+      ~source:(`File filename)
+      (Sedlexing.lexing_position_start lexbuf, Sedlexing.lexing_position_curr lexbuf)
+  in
   match tok with
   | EOF -> Asai.Range.locate loc tok :: []
   | tok -> Asai.Range.locate loc tok :: tokens filename lexbuf
 ;;
 
 let parse_channel (filename : string) (ch : in_channel) : ENotation.notation list =
-  let lexbuf = Lexing.from_channel ch in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
+  let lexbuf = Sedlexing.Utf8.from_channel ch in
+  Sedlexing.set_filename lexbuf filename;
   Combinator.run (tokens filename lexbuf) notations
 ;;
 
@@ -57,8 +61,8 @@ let parse_file (filename : string) : ENotation.notation list =
 
 (* This should not be invoke from outside, just for testing purpose *)
 let parse_single (input : string) : ENotation.notation =
-  let lexbuf = Lexing.from_string input in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = "test" };
+  let lexbuf = Sedlexing.Utf8.from_string input in
+  Sedlexing.set_filename lexbuf "test";
   Combinator.run (tokens "test" lexbuf) enotation
 ;;
 

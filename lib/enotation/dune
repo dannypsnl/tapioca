@@ -1,9 +1,7 @@
-(ocamllex Lexer)
-
 (library
  (name Tapioca_enotation)
  (public_name tapioca.enotation)
  (inline_tests)
  (preprocess
-  (pps ppx_deriving.show ppx_expect))
- (libraries asai algaeff))
+  (pps sedlex.ppx ppx_deriving.show ppx_expect))
+ (libraries sedlex asai algaeff))
