@@ -1,9 +1,3 @@
-exception
-  UnexpectedToken of
-    { loc : Asai.Range.t
-    ; tok : Lexer.token
-    }
-
 let rec enotation () : ENotation.notation =
   let open Combinator in
   let open ENotation in
@@ -34,7 +28,7 @@ let rec enotation () : ENotation.notation =
       enotation ()
     | CLOSE_PAREN -> raise CloseParen
     | CLOSE_BRACKET -> raise CloseParen
-    | tok -> raise (UnexpectedToken { loc; tok })
+    | EOF -> raise EOF
   in
   WithLoc (Asai.Range.locate loc notation)
 ;;
@@ -69,19 +63,25 @@ let parse_file (filename : string) : ENotation.notation list =
 ;;
 
 (* This should not be invoke from outside, just for testing purpose *)
-let parse_single (input : string) : ENotation.notation =
+let test_parse_single (input : string) : ENotation.notation =
   let lexbuf = Sedlexing.Utf8.from_string input in
   Sedlexing.set_filename lexbuf "test";
   Combinator.run (tokens "test" lexbuf) enotation
 ;;
 
+let test_parse_many (input : string) : ENotation.notation list =
+  let lexbuf = Sedlexing.Utf8.from_string input in
+  Sedlexing.set_filename lexbuf "test";
+  Combinator.run (tokens "test" lexbuf) notations
+;;
+
 let%expect_test "identifier" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "x";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "x";
   [%expect {| x |}]
 ;;
 
 let%expect_test "identifier weird" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "#%x";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "#%x";
   [%expect {| #%x |}]
 ;;
 
@@ -89,29 +89,29 @@ let%expect_test "identifier weird" =
 let%expect_test "identifier obsure" =
   print_string
   @@ [%show: ENotation.notation]
-  @@ parse_single "obscure-name-!$%^&*-_=+<>/?";
+  @@ test_parse_single "obscure-name-!$%^&*-_=+<>/?";
   [%expect {| obscure-name-!$%^&*-_=+<>/? |}]
 ;;
 
 let%expect_test "identifier 漢字" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "世界";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "世界";
   [%expect {| 世界 |}]
 ;;
 
 let%expect_test "identifier 日文" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "本好きの下剋上";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "本好きの下剋上";
   [%expect {| 本好きの下剋上 |}]
 ;;
 
 let%expect_test "identifier quote" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "|6|";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "|6|";
   [%expect {| |6| |}]
 ;;
 
 let%expect_test "identifier many" =
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "λ";
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "😇";
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "ok#";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "λ";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "😇";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "ok#";
   [%expect
     {|
     λ
@@ -121,35 +121,35 @@ let%expect_test "identifier many" =
 ;;
 
 let%expect_test "boolean true" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "#t";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "#t";
   [%expect {| #t |}]
 ;;
 
 let%expect_test "boolean false" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "#f";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "#f";
   [%expect {| #f |}]
 ;;
 
 let%expect_test "integer" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "1";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "1";
   [%expect {| 1 |}]
 ;;
 
 let%expect_test "rational" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "1/2";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "1/2";
   [%expect {| 1/2 |}]
 ;;
 
 let%expect_test "a comment then an identifier" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "#;(x y z) x";
+  print_string @@ [%show: ENotation.notation] @@ test_parse_single "#;(x y z) x";
   [%expect {| x |}]
 ;;
 
 let%expect_test "list" =
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "(x y z)";
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "(1 2 3)";
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "[1 2 3]";
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "([1 2 3] 4 5 6)";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "(x y z)";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "(1 2 3)";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "[1 2 3]";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "([1 2 3] 4 5 6)";
   [%expect
     {|
     (x y z)
@@ -160,8 +160,8 @@ let%expect_test "list" =
 ;;
 
 let%expect_test "vector" =
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "#(1 2 3)";
-  print_endline @@ [%show: ENotation.notation] @@ parse_single "#(1 #(2 3))";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "#(1 2 3)";
+  print_endline @@ [%show: ENotation.notation] @@ test_parse_single "#(1 #(2 3))";
   [%expect
     {|
     #(1 2 3)
