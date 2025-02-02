@@ -82,15 +82,6 @@ let comment echo buf =
   | _ -> assert false
 ;;
 
-let digit_value c =
-  let open Stdlib in
-  match c with
-  | 'a' .. 'f' -> 10 + Char.code c - Char.code 'a'
-  | 'A' .. 'F' -> 10 + Char.code c - Char.code 'A'
-  | '0' .. '9' -> Char.code c - Char.code '0'
-  | _ -> assert false
-;;
-
 let num_value buffer =
   let buf = Utf8.lexeme buffer in
   int_of_string buf
