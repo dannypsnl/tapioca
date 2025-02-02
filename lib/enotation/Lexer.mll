@@ -4,6 +4,7 @@ exception TokenError of string
 type token = 
   | OPEN_PAREN [@printer fun fmt () -> fprintf fmt "("]
   | CLOSE_PAREN [@printer fun fmt () -> fprintf fmt ")"]
+  | NOTATION_COMMENT [@printer fun fmt () -> fprintf fmt "#;"]
   | IDENTIFIER of string [@printer fun fmt name -> fprintf fmt "%s" name]
   | EOF
 [@@deriving_show]
@@ -22,6 +23,7 @@ let newline = '\r' | '\n' | "\r\n"
 rule token =
   parse
   | ";" { comment lexbuf }
+  | "#;" { return lexbuf @@ NOTATION_COMMENT }
   | '(' { return lexbuf @@ OPEN_PAREN }
   | ')' { return lexbuf @@ CLOSE_PAREN }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }

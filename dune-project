@@ -28,7 +28,9 @@
   (ptime
    (>= 1.1.0))
   (asai
-   (>= 0.3.0)))
+   (>= 0.3.0))
+  (algaeff
+   (>= 2.0.0)))
  (tags
   ("add topics" "to describe" your project)))
 
