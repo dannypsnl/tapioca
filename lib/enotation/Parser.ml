@@ -24,11 +24,16 @@ let rec enotation () : ENotation.notation =
       let notations = Combinator.many enotation () in
       consume Lexer.CLOSE_PAREN;
       L notations
+    | OPEN_BRACKET ->
+      let notations = Combinator.many enotation () in
+      consume Lexer.CLOSE_BRACKET;
+      L notations
     | NOTATION_COMMENT ->
       (* a #; comment will ignore next enotation, and take the next next enotaion *)
       let _ = enotation () in
       enotation ()
     | CLOSE_PAREN -> raise CloseParen
+    | CLOSE_BRACKET -> raise CloseParen
     | tok -> raise (UnexpectedToken { loc; tok })
   in
   WithLoc (Asai.Range.locate loc notation)
@@ -107,7 +112,8 @@ let%expect_test "identifier many" =
   print_endline @@ [%show: ENotation.notation] @@ parse_single "λ";
   print_endline @@ [%show: ENotation.notation] @@ parse_single "😇";
   print_endline @@ [%show: ENotation.notation] @@ parse_single "ok#";
-  [%expect {|
+  [%expect
+    {|
     λ
     😇
     ok#
@@ -134,14 +140,23 @@ let%expect_test "rational" =
   [%expect {| 1/2 |}]
 ;;
 
-let%expect_test "a list of identifier" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "(x y z)";
-  [%expect {| (x y z) |}]
-;;
-
 let%expect_test "a comment then an identifier" =
   print_string @@ [%show: ENotation.notation] @@ parse_single "#;(x y z) x";
   [%expect {| x |}]
+;;
+
+let%expect_test "list" =
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "(x y z)";
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "(1 2 3)";
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "[1 2 3]";
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "([1 2 3] 4 5 6)";
+  [%expect
+    {|
+    (x y z)
+    (1 2 3)
+    (1 2 3)
+    ((1 2 3) 4 5 6)
+    |}]
 ;;
 
 let%expect_test "vector" =

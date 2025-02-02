@@ -4,6 +4,8 @@ type token =
   | OPEN_VECTOR [@printer fun fmt () -> fprintf fmt "#("]
   | OPEN_PAREN [@printer fun fmt () -> fprintf fmt "("]
   | CLOSE_PAREN [@printer fun fmt () -> fprintf fmt ")"]
+  | OPEN_BRACKET [@printer fun fmt () -> fprintf fmt "["]
+  | CLOSE_BRACKET [@printer fun fmt () -> fprintf fmt "]"]
   | NOTATION_COMMENT [@printer fun fmt () -> fprintf fmt "#;"]
   | IDENTIFIER of string [@printer fun fmt name -> fprintf fmt "%s" name]
   | BOOL_TRUE [@printer fun fmt () -> fprintf fmt "#t"]
@@ -110,6 +112,8 @@ let rec token buf =
   | "#(" -> OPEN_VECTOR
   | '(' -> OPEN_PAREN
   | ')' -> CLOSE_PAREN
+  | '[' -> OPEN_BRACKET
+  | ']' -> CLOSE_BRACKET
   | decimal_ascii, '/', decimal_ascii ->
     let buff = Utf8.lexeme buf in
     (match String.split_on_char '/' buff with
