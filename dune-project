@@ -21,16 +21,15 @@
  (description "A longer description")
  (depends
   ocaml
-  (cmdliner
-   (>= 1.2.0))
-  (eio_main
-   (>= 1.1))
-  (ptime
-   (>= 1.1.0))
-  (asai
-   (>= 0.3.0))
-  (algaeff
-   (>= 2.0.0)))
+  dune
+  ocamlformat
+  ppxlib
+  ppx_deriving
+  cmdliner
+  eio
+  eio_main
+  asai
+  algaeff)
  (tags
   ("add topics" "to describe" your project)))
 

@@ -7,7 +7,7 @@ type token =
   | NOTATION_COMMENT [@printer fun fmt () -> fprintf fmt "#;"]
   | IDENTIFIER of string [@printer fun fmt name -> fprintf fmt "%s" name]
   | EOF
-[@@deriving_show]
+[@@deriving show]
 
 let ident str = IDENTIFIER str
 let return _lexbuf tok = tok

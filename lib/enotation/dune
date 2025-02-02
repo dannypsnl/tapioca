@@ -3,6 +3,7 @@
 (library
  (name Tapioca_enotation)
  (public_name tapioca.enotation)
+ (inline_tests)
  (preprocess
-  (pps ppx_deriving.show))
+  (pps ppx_deriving.show ppx_expect))
  (libraries asai algaeff))

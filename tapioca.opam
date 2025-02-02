@@ -10,13 +10,16 @@ homepage: "https://github.com/username/reponame"
 doc: "https://url/to/documentation"
 bug-reports: "https://github.com/username/reponame/issues"
 depends: [
-  "dune" {>= "3.17"}
   "ocaml"
-  "cmdliner" {>= "1.2.0"}
-  "eio_main" {>= "1.1"}
-  "ptime" {>= "1.1.0"}
-  "asai" {>= "0.3.0"}
-  "algaeff" {>= "2.0.0"}
+  "dune" {>= "3.17"}
+  "ocamlformat"
+  "ppxlib"
+  "ppx_deriving"
+  "cmdliner"
+  "eio"
+  "eio_main"
+  "asai"
+  "algaeff"
   "odoc" {with-doc}
 ]
 build: [
