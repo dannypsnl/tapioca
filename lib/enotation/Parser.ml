@@ -20,6 +20,7 @@ let rec enotation () : ENotation.notation =
       (* a #; comment will ignore next enotation, and take the next next enotaion *)
       let _ = enotation () in
       enotation ()
+    | CLOSE_PAREN -> raise CloseParen
     | tok -> raise (UnexpectedToken { loc; tok })
   in
   WithLoc (Asai.Range.locate loc notation)
@@ -51,8 +52,23 @@ let parse_file (filename : string) : ENotation.notation list =
 ;;
 
 (* This should not be invoke from outside, just for testing purpose *)
-let parse_single (input : string) =
+let parse_single (input : string) : ENotation.notation =
   let lexbuf = Lexing.from_string input in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = "test" };
   Combinator.run (tokens "test" lexbuf) enotation
+;;
+
+let%expect_test "single identifier" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "x";
+  [%expect {| x |}]
+;;
+
+let%expect_test "a list of identifier" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "(x y z)";
+  [%expect {| (x y z) |}]
+;;
+
+let%expect_test "a comment then an identifier" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "#;(x y z) x";
+  [%expect {| x |}]
 ;;

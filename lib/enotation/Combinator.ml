@@ -1,4 +1,5 @@
 exception Impossible
+exception CloseParen
 
 exception
   TokenMismatched of
@@ -48,7 +49,7 @@ let consume (predict : Lexer.token) : unit =
 let catch_parse_error (p : unit -> 'a) : 'a option =
   let pos = current_position () in
   try Some (p ()) with
-  | TokenMismatched _ ->
+  | TokenMismatched _ | CloseParen ->
     shift pos;
     None
   | e -> raise e
