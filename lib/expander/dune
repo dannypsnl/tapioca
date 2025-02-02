@@ -1,0 +1,9 @@
+(library
+ (name Tapioca_expander)
+ (public_name tapioca.expander)
+ (inline_tests)
+ (preprocess
+  (pps ppx_deriving.show ppx_expect))
+ (libraries
+  asai algaeff
+  tapioca.enotation))
