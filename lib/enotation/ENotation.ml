@@ -11,4 +11,7 @@ type notation =
   | L of notation list
   [@printer
     fun fmt xs -> fprintf fmt "(%s)" (String.concat " " (List.map show_notation xs))]
+  | V of notation list
+  [@printer
+    fun fmt xs -> fprintf fmt "#(%s)" (String.concat " " (List.map show_notation xs))]
 [@@deriving show]

@@ -1,6 +1,7 @@
 open Sedlexing
 
 type token =
+  | OPEN_VECTOR [@printer fun fmt () -> fprintf fmt "#("]
   | OPEN_PAREN [@printer fun fmt () -> fprintf fmt "("]
   | CLOSE_PAREN [@printer fun fmt () -> fprintf fmt ")"]
   | NOTATION_COMMENT [@printer fun fmt () -> fprintf fmt "#;"]
@@ -106,6 +107,7 @@ let rec token buf =
   | "#t" -> BOOL_TRUE
   | "#f" -> BOOL_FALSE
   | "#;" -> NOTATION_COMMENT
+  | "#(" -> OPEN_VECTOR
   | '(' -> OPEN_PAREN
   | ')' -> CLOSE_PAREN
   | decimal_ascii, '/', decimal_ascii ->

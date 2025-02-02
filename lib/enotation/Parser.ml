@@ -16,6 +16,10 @@ let rec enotation () : ENotation.notation =
     | RATIONAL (p, q) -> Rational (p, q)
     | BOOL_TRUE -> Bool true
     | BOOL_FALSE -> Bool false
+    | OPEN_VECTOR ->
+      let notations = Combinator.many enotation () in
+      consume Lexer.CLOSE_PAREN;
+      V notations
     | OPEN_PAREN ->
       let notations = Combinator.many enotation () in
       consume Lexer.CLOSE_PAREN;
@@ -132,4 +136,9 @@ let%expect_test "a list of identifier" =
 let%expect_test "a comment then an identifier" =
   print_string @@ [%show: ENotation.notation] @@ parse_single "#;(x y z) x";
   [%expect {| x |}]
+;;
+
+let%expect_test "vector" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "#(x y z)";
+  [%expect {| #(x y z) |}]
 ;;
