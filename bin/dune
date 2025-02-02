@@ -3,4 +3,7 @@
  (name main)
  (preprocess
   (pps ppx_deriving.show))
- (libraries tapioca.enotation))
+ (libraries
+  tapioca.enotation
+  tapioca.expander
+  cmdliner))
