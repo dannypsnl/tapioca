@@ -69,12 +69,6 @@ let test_parse_single (input : string) : ENotation.notation =
   Combinator.run (tokens "test" lexbuf) enotation
 ;;
 
-let test_parse_many (input : string) : ENotation.notation list =
-  let lexbuf = Sedlexing.Utf8.from_string input in
-  Sedlexing.set_filename lexbuf "test";
-  Combinator.run (tokens "test" lexbuf) notations
-;;
-
 let%expect_test "identifier" =
   print_string @@ [%show: ENotation.notation] @@ test_parse_single "x";
   [%expect {| x |}]
