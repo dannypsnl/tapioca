@@ -12,6 +12,7 @@ let rec enotation () : ENotation.notation =
   let notation =
     match tok.value with
     | IDENTIFIER s -> Id s
+    | INTEGER i -> Int i
     | BOOL_TRUE -> Bool true
     | BOOL_FALSE -> Bool false
     | OPEN_PAREN ->
@@ -60,9 +61,24 @@ let parse_single (input : string) : ENotation.notation =
   Combinator.run (tokens "test" lexbuf) enotation
 ;;
 
-let%expect_test "single identifier" =
+let%expect_test "identifier" =
   print_string @@ [%show: ENotation.notation] @@ parse_single "x";
   [%expect {| x |}]
+;;
+
+let%expect_test "boolean true" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "#t";
+  [%expect {| #t |}]
+;;
+
+let%expect_test "boolean false" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "#f";
+  [%expect {| #f |}]
+;;
+
+let%expect_test "integer" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "1";
+  [%expect {| 1 |}]
 ;;
 
 let%expect_test "a list of identifier" =
