@@ -118,6 +118,7 @@ let rec token buf =
   | decimal_ascii ->
     let number = num_value buf in
     INTEGER number
+  | '|', Star (Compl '|'), '|' -> IDENTIFIER (Utf8.lexeme buf)
   | idChunk -> IDENTIFIER (Utf8.lexeme buf)
   | _ ->
     let pos = fst @@ lexing_positions buf in

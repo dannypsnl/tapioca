@@ -94,6 +94,16 @@ let%expect_test "identifier 日文" =
   [%expect {| 本好きの下剋上 |}]
 ;;
 
+let%expect_test "identifier quote" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "|6|";
+  [%expect {| |6| |}]
+;;
+
+let%expect_test "identifier many" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "(λ (😇) ok#)";
+  [%expect {| (λ (😇) ok#) |}]
+;;
+
 let%expect_test "boolean true" =
   print_string @@ [%show: ENotation.notation] @@ parse_single "#t";
   [%expect {| #t |}]
