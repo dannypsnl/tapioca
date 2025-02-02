@@ -13,6 +13,7 @@ let rec enotation () : ENotation.notation =
     match tok.value with
     | IDENTIFIER s -> Id s
     | INTEGER i -> Int i
+    | RATIONAL (p, q) -> Rational (p, q)
     | BOOL_TRUE -> Bool true
     | BOOL_FALSE -> Bool false
     | OPEN_PAREN ->
@@ -79,6 +80,11 @@ let%expect_test "boolean false" =
 let%expect_test "integer" =
   print_string @@ [%show: ENotation.notation] @@ parse_single "1";
   [%expect {| 1 |}]
+;;
+
+let%expect_test "rational" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "1/2";
+  [%expect {| 1/2 |}]
 ;;
 
 let%expect_test "a list of identifier" =
