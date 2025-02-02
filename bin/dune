@@ -6,4 +6,6 @@
  (libraries
   tapioca.enotation
   tapioca.expander
-  cmdliner))
+  cmdliner
+  eio
+  eio_main))
