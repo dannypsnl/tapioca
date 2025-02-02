@@ -1,0 +1,4 @@
+(executable
+ (public_name tapioca)
+ (name main)
+ (libraries tapioca))
