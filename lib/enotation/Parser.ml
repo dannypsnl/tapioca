@@ -104,8 +104,14 @@ let%expect_test "identifier quote" =
 ;;
 
 let%expect_test "identifier many" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "(λ (😇) ok#)";
-  [%expect {| (λ (😇) ok#) |}]
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "λ";
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "😇";
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "ok#";
+  [%expect {|
+    λ
+    😇
+    ok#
+    |}]
 ;;
 
 let%expect_test "boolean true" =
@@ -139,6 +145,11 @@ let%expect_test "a comment then an identifier" =
 ;;
 
 let%expect_test "vector" =
-  print_string @@ [%show: ENotation.notation] @@ parse_single "#(x y z)";
-  [%expect {| #(x y z) |}]
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "#(1 2 3)";
+  print_endline @@ [%show: ENotation.notation] @@ parse_single "#(1 #(2 3))";
+  [%expect
+    {|
+    #(1 2 3)
+    #(1 #(2 3))
+    |}]
 ;;
