@@ -12,6 +12,8 @@ let rec enotation () : ENotation.notation =
   let notation =
     match tok.value with
     | IDENTIFIER s -> Id s
+    | BOOL_TRUE -> Bool true
+    | BOOL_FALSE -> Bool false
     | OPEN_PAREN ->
       let notations = Combinator.many enotation () in
       consume Lexer.CLOSE_PAREN;

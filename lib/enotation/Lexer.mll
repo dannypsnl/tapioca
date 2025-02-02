@@ -2,6 +2,8 @@
 exception TokenError of string
 
 type token = 
+  | BOOL_TRUE  [@printer fun fmt () -> fprintf fmt "#t"]
+  | BOOL_FALSE [@printer fun fmt () -> fprintf fmt "#f"]
   | OPEN_PAREN [@printer fun fmt () -> fprintf fmt "("]
   | CLOSE_PAREN [@printer fun fmt () -> fprintf fmt ")"]
   | NOTATION_COMMENT [@printer fun fmt () -> fprintf fmt "#;"]
@@ -24,6 +26,8 @@ rule token =
   parse
   | ";" { comment lexbuf }
   | "#;" { return lexbuf @@ NOTATION_COMMENT }
+  | "#t" { return lexbuf @@ BOOL_TRUE }
+  | "#f" { return lexbuf @@ BOOL_FALSE }
   | '(' { return lexbuf @@ OPEN_PAREN }
   | ')' { return lexbuf @@ CLOSE_PAREN }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
