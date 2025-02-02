@@ -19,7 +19,16 @@
  (name tapioca)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml)
+ (depends
+  ocaml
+  (cmdliner
+   (>= 1.2.0))
+  (eio_main
+   (>= 1.1))
+  (ptime
+   (>= 1.1.0))
+  (asai
+   (>= 0.3.0)))
  (tags
   ("add topics" "to describe" your project)))
 

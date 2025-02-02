@@ -1,0 +1,7 @@
+(ocamllex Lexer)
+
+(library
+ (name Tapioca_enotation)
+ (public_name tapioca.enotation)
+ (preprocess
+  (pps ppx_deriving.show)))
