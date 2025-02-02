@@ -71,6 +71,11 @@ let%expect_test "identifier" =
   [%expect {| x |}]
 ;;
 
+let%expect_test "identifier" =
+  print_string @@ [%show: ENotation.notation] @@ parse_single "#%x";
+  [%expect {| #%x |}]
+;;
+
 let%expect_test "boolean true" =
   print_string @@ [%show: ENotation.notation] @@ parse_single "#t";
   [%expect {| #t |}]

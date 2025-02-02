@@ -24,7 +24,47 @@ let hex_ascii = [%sedlex.regexp? "0x", Plus ('0' .. '9' | 'a' .. 'f' | 'A' .. 'F
 
 let idChunk =
   [%sedlex.regexp?
-    Compl (' ' | '\t' | '\n' | '\r' | '(' | ')' | '-' | '+' | '@' | '.' | '"' | ';')]
+    ( ( Compl
+          ( ' '
+          | '\t'
+          | '\n'
+          | '\r'
+          | '('
+          | ')'
+          | '['
+          | ']'
+          | '{'
+          | '}'
+          | '"'
+          | ','
+          | '\''
+          | '`'
+          | ';'
+          | '#'
+          | '|'
+          | '\\'
+          | '.' )
+      | "#%" )
+    , Star
+        (Compl
+           ( ' '
+           | '\t'
+           | '\n'
+           | '\r'
+           | '('
+           | ')'
+           | '['
+           | ']'
+           | '{'
+           | '}'
+           | '"'
+           | ','
+           | '\''
+           | '`'
+           | ';'
+           | '|'
+           | '\\'
+           | '.' )) )]
 ;;
 
 let stringChunk = [%sedlex.regexp? Star (Compl ('"' | '\\' | '\n'))]
@@ -51,15 +91,9 @@ let digit_value c =
   | _ -> assert false
 ;;
 
-let num_value buffer ~base ~first =
+let num_value buffer =
   let buf = Utf8.lexeme buffer in
-  let c = ref 0 in
-  for i = first to String.length buf - 1 do
-    let v = digit_value buf.[i] in
-    assert (v < base);
-    c := (base * !c) + v
-  done;
-  !c
+  int_of_string buf
 ;;
 
 let rec token buf =
@@ -78,13 +112,22 @@ let rec token buf =
   | "|#" ->
     comment false buf;
     token buf
+  | "#t" -> BOOL_TRUE
+  | "#f" -> BOOL_FALSE
   | "#;" -> NOTATION_COMMENT
   | '(' -> OPEN_PAREN
   | ')' -> CLOSE_PAREN
+  | decimal_ascii, '/', decimal_ascii ->
+    let buff = Utf8.lexeme buf in
+    (match String.split_on_char '/' buff with
+     | [ p; q ] -> RATIONAL (int_of_string p, int_of_string q)
+     | _ ->
+       let pos = fst @@ lexing_positions buf in
+       raise @@ LexError (pos, "rational number form should be p/q"))
   | decimal_ascii ->
-    let number = num_value ~base:10 ~first:0 buf in
+    let number = num_value buf in
     INTEGER number
-  | Plus idChunk -> IDENTIFIER (Utf8.lexeme buf)
+  | idChunk -> IDENTIFIER (Utf8.lexeme buf)
   | _ ->
     let pos = fst @@ lexing_positions buf in
     let _ = Sedlexing.next buf in
