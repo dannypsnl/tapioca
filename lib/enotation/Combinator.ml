@@ -1,9 +1,11 @@
 exception Impossible
-exception TokenMismatched of {
-  loc: Asai.Range.t;
-  expected: Lexer.token;
-  got: Lexer.token;
-}
+
+exception
+  TokenMismatched of
+    { loc : Asai.Range.t
+    ; expected : Lexer.token
+    ; got : Lexer.token
+    }
 
 module Tokens = struct
   type t = Lexer.token Asai.Range.located list
@@ -40,19 +42,16 @@ let consume (predict : Lexer.token) : unit =
   then ()
   else (
     let loc = Option.get tok.loc in
-    raise (TokenMismatched {
-      loc=loc;
-      expected=  predict;
-      got= tok.value
-    })
-    )
+    raise (TokenMismatched { loc; expected = predict; got = tok.value }))
 ;;
 
 let catch_parse_error (p : unit -> 'a) : 'a option =
   let pos = current_position () in
-  try  Some (p ())  with 
-    | TokenMismatched _ -> shift pos ; None
-    | e -> raise e
+  try Some (p ()) with
+  | TokenMismatched _ ->
+    shift pos;
+    None
+  | e -> raise e
 ;;
 
 let rec many (p : unit -> 'a) () : 'a list =
