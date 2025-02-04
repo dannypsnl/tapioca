@@ -1,33 +1,41 @@
+open Tapioca_enotation
 open Tapioca_enotation.ENotation
 module Tty = Asai.Tty.Make (Reporter.Message)
 
 exception SecondImport
 exception BadImport
-exception BadForm of notation
+exception BadForm of ENotation.notation
 
 type tapi_module = { mutable imports : string list option }
 
-let rec expand_file (ns : notation list) : tapi_module =
+let expand_t (f : ENotation.notation -> 'a) : ENotation.t -> 'a =
+  fun n -> Reporter.with_loc n.loc @@ fun () -> f n.value
+;;
+
+let rec expand_file (ns : ENotation.t list) : tapi_module =
   let m = { imports = None } in
-  List.iter (expand_top (ref m)) ns;
+  List.iter (expand_t (expand_top (ref m))) ns;
   m
 
-and expand_top (m : tapi_module ref) (n : notation) =
+and expand_top (m : tapi_module ref) (n : ENotation.notation) =
   match n with
-  | WithLoc { loc; value } -> Reporter.with_loc loc @@ fun () -> expand_top m value
-  | L (Id "import" :: modules) ->
-    let modules = List.map expand_import modules in
+  | L ({ value = Id "import"; _ } :: modules) ->
+    let modules = List.map (expand_t expand_id) modules in
     if Option.is_some !m.imports then raise SecondImport else !m.imports <- Some modules
+  | L ({ value = Id ":"; _ } :: name :: { value = Id ":"; _ } :: ty) ->
+    let _ = (expand_t expand_id) name in
+    let _ = ty in
+    Reporter.fatalf TODO "TODO %s" ([%show: notation] n)
   | _ -> Reporter.fatalf Expander_error "bad form %s" ([%show: notation] n)
 
-and expand_import : notation -> string = function
-  | WithLoc { loc; value } -> Reporter.with_loc loc @@ fun () -> expand_import value
+and expand_id : ENotation.notation -> string = function
   | Id n -> n
   | n -> Reporter.fatalf Expander_error "bad import form %s" ([%show: notation] n)
 ;;
 
 let%expect_test "import" =
-  let m = expand_file [ L [ Id "import"; Id "rnrs" ] ] in
+  let f = Tapioca_enotation.Parser.test_parse_many "(import rnrs)" in
+  let m = expand_file f in
   (match m.imports with
    | Some s -> List.iter (fun i -> print_endline i) s
    | None -> print_endline "oops");
@@ -35,7 +43,8 @@ let%expect_test "import" =
 ;;
 
 let%expect_test "import nothing" =
-  let m = expand_file [ L [ Id "import" ] ] in
+  let f = Tapioca_enotation.Parser.test_parse_many "(import )" in
+  let m = expand_file f in
   (match m.imports with
    | Some s -> List.iter (fun i -> print_endline i) s
    | None -> print_endline "oops");

@@ -3,6 +3,15 @@ module Tty = Asai.Tty.Make (Tapioca_expander.Reporter.Message)
 
 let version = "0.1.0"
 
+let compile filename : unit =
+  let ns = Tapioca_enotation.Parser.parse_file filename in
+  let m = Tapioca_expander.Expander.expand_file ns in
+  let _ = m in
+  (* TODO: check type of m *)
+  (* TODO: dump m to chez *)
+  ()
+;;
+
 let compile_cmd ~env =
   let _ = env in
   let arg_file =
@@ -12,15 +21,7 @@ let compile_cmd ~env =
   let doc = "Compile input program file to chez scheme" in
   let man = [ `S Manpage.s_description; `P "" ] in
   let info = Cmd.info "compile" ~version ~doc ~man in
-  Cmd.v
-    info
-    Term.(
-      const (fun filename ->
-        let ns = Tapioca_enotation.Parser.parse_file filename in
-        let m = Tapioca_expander.Expander.expand_file ns in
-        let _ = m in
-        ())
-      $ arg_file)
+  Cmd.v info Term.(const compile $ arg_file)
 ;;
 
 let load_cmd ~env =
