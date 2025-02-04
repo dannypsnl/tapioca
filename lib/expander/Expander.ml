@@ -26,11 +26,32 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
     let _ = (expand_t expand_id) name in
     let _ = ty in
     Reporter.fatalf TODO "TODO %s" ([%show: notation] n)
+  | L ({ value = Id "define"; _ } :: funcform :: bodys) ->
+    (match funcform with
+     | { value = Id name; _ } ->
+       (match bodys with
+        | [ body ] ->
+          let _ = name in
+          let _ = body in
+          Reporter.fatalf TODO "TODO"
+        | _ ->
+          Reporter.fatalf
+            Expander_error
+            "expected only one body here %s"
+            ([%show: notation] n))
+     | _ -> Reporter.fatalf TODO "TODO")
   | _ -> Reporter.fatalf Expander_error "bad form %s" ([%show: notation] n)
+
+and expand_expression : ENotation.notation -> Term.term = function
+  | n -> Reporter.fatalf Expander_error "bad import form %s" ([%show: notation] n)
 
 and expand_id : ENotation.notation -> string = function
   | Id n -> n
-  | n -> Reporter.fatalf Expander_error "bad import form %s" ([%show: notation] n)
+  | n ->
+    Reporter.fatalf
+      Expander_error
+      "expected an identifier, got `%s`"
+      ([%show: notation] n)
 ;;
 
 let test_runner (f : unit -> 'a) : 'a =
