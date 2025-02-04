@@ -41,7 +41,7 @@ let rec tokens filename lexbuf =
   let loc =
     Asai.Range.of_lex_range
       ~source:(`File filename)
-      (Sedlexing.lexing_position_start lexbuf, Sedlexing.lexing_position_curr lexbuf)
+      (Sedlexing.lexing_bytes_positions lexbuf)
   in
   match tok with
   | EOF -> Asai.Range.locate loc tok :: []
