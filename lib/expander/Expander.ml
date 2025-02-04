@@ -33,7 +33,17 @@ and expand_id : ENotation.notation -> string = function
   | n -> Reporter.fatalf Expander_error "bad import form %s" ([%show: notation] n)
 ;;
 
+let test_runner (f : unit -> 'a) : 'a =
+  let fatal diagnostics =
+    Tty.display diagnostics;
+    exit 1
+  in
+  Reporter.run ~emit:Tty.display ~fatal f
+;;
+
 let%expect_test "import" =
+  test_runner
+  @@ fun () ->
   let f = Tapioca_enotation.Parser.test_parse_many "(import rnrs)" in
   let m = expand_file f in
   (match m.imports with
@@ -43,6 +53,8 @@ let%expect_test "import" =
 ;;
 
 let%expect_test "import nothing" =
+  test_runner
+  @@ fun () ->
   let f = Tapioca_enotation.Parser.test_parse_many "(import )" in
   let m = expand_file f in
   (match m.imports with
