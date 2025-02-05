@@ -12,10 +12,15 @@ type tapi_module =
   { mutable imports : string list option
   ; context : Context.context
   ; global_vars : (string, Ast.term) Hashtbl.t
+  ; global_funcs : (string, Ast.term) Hashtbl.t
   }
 
 let create_module () : tapi_module =
-  { imports = None; context = Context.create None; global_vars = Hashtbl.create 100 }
+  { imports = None
+  ; context = Context.create None
+  ; global_vars = Hashtbl.create 100
+  ; global_funcs = Hashtbl.create 100
+  }
 ;;
 
 let with_loc (f : ENotation.notation -> 'a) : ENotation.t -> 'a =
@@ -36,24 +41,46 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
     let name = (with_loc expand_id) name in
     let ty = expand_top_typ ty Emp in
     Context.insert !m.context name ty
+  | L ({ value = Id "define"; _ } :: { value = Id name; _ } :: [ { loc; value = body } ])
+    ->
+    let term : term = WithLoc { loc; value = expand_term body } in
+    Hashtbl.add !m.global_vars name term
+  | L ({ value = Id "define"; _ } :: { value = Id _; _ } :: _) ->
+    Reporter.fatalf Expander_error "expected only one expression here"
   | L ({ value = Id "define"; _ } :: funcform :: bodys) ->
-    (match funcform with
-     | { value = Id name; _ } ->
-       (match bodys with
-        | [ { loc; value = body } ] ->
-          let body : term = WithLoc { loc; value = expand_term body } in
-          Hashtbl.add !m.global_vars name body
-        | _ ->
-          Reporter.fatalf
-            Expander_error
-            "expected only one expression here %s"
-            ([%show: notation] n))
-     | _ -> Reporter.fatalf TODO "TODO")
+    let name, term = (with_loc (expand_func_form bodys)) funcform in
+    Hashtbl.add !m.global_funcs name term
   | _ -> Reporter.fatalf Expander_error "bad form %s" ([%show: notation] n)
+
+and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string * term
+  = function
+  | Id name -> name, wrap_begin bodys
+  | L (head :: params) ->
+    let params = List.map (with_loc expand_id) params in
+    let name, body = (with_loc (expand_func_form bodys)) head in
+    name, Lambda { params; body }
+  | _ -> Reporter.fatalf Expander_error "not a valid function form"
 
 and expand_term : ENotation.notation -> term = function
   | Int i -> Int i
-  | n -> Reporter.fatalf Expander_error "bad import form %s" ([%show: notation] n)
+  | Id x -> Identifier x
+  | L ({ value = Id "let"; _ } :: _bindings :: bodys) ->
+    let body = wrap_begin bodys in
+    Let ([], body)
+  | L ({ value = Id "lambda"; _ } :: { value = L params; _ } :: bodys) ->
+    let params = List.map (with_loc expand_id) params in
+    let body = wrap_begin bodys in
+    Lambda { params; body }
+  | n -> Reporter.fatalf Expander_error "bad term %s" ([%show: notation] n)
+
+and wrap_begin (bodys : ENotation.t list) : term =
+  let bodys : term list =
+    List.map
+      (fun (t : ENotation.t) ->
+         (WithLoc { loc = t.loc; value = expand_term t.value } : term))
+      bodys
+  in
+  Begin bodys
 
 and expand_top_typ (ts : ENotation.t list) (stack : typ bwd) : typ =
   match ts with

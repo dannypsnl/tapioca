@@ -7,7 +7,16 @@ type term =
   | Float of float
   | Bool of bool
   | String of string
+  | Identifier of string
   | List of term list
+  | Let of bindings * term
+  | Lambda of
+      { params : string list
+      ; body : term
+      }
+  | Begin of term list
+
+and bindings = (string * term) list
 
 type typ =
   | WithLoc of typ located [@printer fun fmt t -> fprintf fmt "%s" (show_typ t.value)]
