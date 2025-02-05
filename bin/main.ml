@@ -7,7 +7,6 @@ let version = "0.1.0"
 
 let compile ~env (is_program_mode : bool) (filename : string) : unit =
   let root = Eio.Stdenv.cwd env in
-  (* let path = root / filename in *)
   let ns = Parser.parse_file filename in
   let m = Expander.expand_file filename ns in
   (* TODO: check type of m *)
