@@ -1,15 +1,18 @@
 open Cmdliner
+open Tapioca_enotation
+open Tapioca_expander
 module Tty = Asai.Tty.Make (Tapioca_expander.Reporter.Message)
 
 let version = "0.1.0"
 
-let compile filename : unit =
-  let ns = Tapioca_enotation.Parser.parse_file filename in
-  let m = Tapioca_expander.Expander.expand_file ns in
-  let _ = m in
+let compile ~env (filename : string) : unit =
+  let root = Eio.Stdenv.cwd env in
+  (* let path = root / filename in *)
+  let ns = Parser.parse_file filename in
+  let m = Expander.expand_file filename ns in
   (* TODO: check type of m *)
   (* TODO: dump m to chez *)
-  ()
+  Chez.produce ~mode:Library root m
 ;;
 
 let compile_cmd ~env =
@@ -21,7 +24,7 @@ let compile_cmd ~env =
   let doc = "Compile input program file to chez scheme" in
   let man = [ `S Manpage.s_description; `P "" ] in
   let info = Cmd.info "compile" ~version ~doc ~man in
-  Cmd.v info Term.(const compile $ arg_file)
+  Cmd.v info Term.(const (compile ~env) $ arg_file)
 ;;
 
 let load_cmd ~env =
@@ -33,15 +36,7 @@ let load_cmd ~env =
   let doc = "Load input program file into REPL" in
   let man = [ `S Manpage.s_description; `P "" ] in
   let info = Cmd.info "load" ~version ~doc ~man in
-  Cmd.v
-    info
-    Term.(
-      const (fun filename ->
-        let ns = Tapioca_enotation.Parser.parse_file filename in
-        let m = Tapioca_expander.Expander.expand_file ns in
-        let _ = m in
-        ())
-      $ arg_file)
+  Cmd.v info Term.(const (fun _filename -> ()) $ arg_file)
 ;;
 
 let cmd ~env =

@@ -1,3 +1,5 @@
+(import rnrs)
+
 (: x : int)
 (define x 1)
 

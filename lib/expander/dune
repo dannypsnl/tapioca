@@ -5,7 +5,8 @@
  (preprocess
   (pps ppx_deriving.show ppx_expect))
  (libraries
+  tapioca.enotation
   asai
   algaeff
   bwd
-  tapioca.enotation))
+  eio))

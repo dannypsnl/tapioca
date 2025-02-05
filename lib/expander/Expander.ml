@@ -9,26 +9,22 @@ exception BadImport
 exception BadForm of ENotation.notation
 
 type tapi_module =
-  { mutable imports : string list option
+  { filename : string
+  ; mutable imports : string list option
   ; context : Context.context
-  ; global_vars : (string, Ast.term) Hashtbl.t
-  ; global_funcs : (string, Ast.term) Hashtbl.t
+  ; tops : (string, Ast.term) Hashtbl.t
   }
 
-let create_module () : tapi_module =
-  { imports = None
-  ; context = Context.create None
-  ; global_vars = Hashtbl.create 100
-  ; global_funcs = Hashtbl.create 100
-  }
+let create_module (filename : string) : tapi_module =
+  { filename; imports = None; context = Context.create None; tops = Hashtbl.create 100 }
 ;;
 
 let with_loc (f : ENotation.notation -> 'a) : ENotation.t -> 'a =
   fun n -> Reporter.with_loc n.loc @@ fun () -> f n.value
 ;;
 
-let rec expand_file (ns : ENotation.t list) : tapi_module =
-  let m = create_module () in
+let rec expand_file (filename : string) (ns : ENotation.t list) : tapi_module =
+  let m = create_module filename in
   List.iter (with_loc (expand_top (ref m))) ns;
   m
 
@@ -44,12 +40,12 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
   | L ({ value = Id "define"; _ } :: { value = Id name; _ } :: [ { loc; value = body } ])
     ->
     let term : term = WithLoc { loc; value = expand_term body } in
-    Hashtbl.add !m.global_vars name term
+    Hashtbl.add !m.tops name term
   | L ({ value = Id "define"; _ } :: { value = Id _; _ } :: _) ->
     Reporter.fatalf Expander_error "expected only one expression here"
   | L ({ value = Id "define"; _ } :: funcform :: bodys) ->
     let name, term = (with_loc (expand_func_form bodys)) funcform in
-    Hashtbl.add !m.global_funcs name term
+    Hashtbl.add !m.tops name term
   | _ -> Reporter.fatalf Expander_error "bad form %s" ([%show: notation] n)
 
 and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string * term
@@ -58,11 +54,13 @@ and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string *
   | L (head :: params) ->
     let params = List.map (with_loc expand_id) params in
     let name, body = (with_loc (expand_func_form bodys)) head in
-    name, Lambda { params; body }
+    name, Lambda (params, body)
   | _ -> Reporter.fatalf Expander_error "not a valid function form"
 
 and expand_term : ENotation.notation -> term = function
   | Int i -> Int i
+  | Rational (p, q) -> Rational (p, q)
+  | Bool b -> Bool b
   | Id x -> Identifier x
   | L ({ value = Id "let"; _ } :: _bindings :: bodys) ->
     let body = wrap_begin bodys in
@@ -70,7 +68,7 @@ and expand_term : ENotation.notation -> term = function
   | L ({ value = Id "lambda"; _ } :: { value = L params; _ } :: bodys) ->
     let params = List.map (with_loc expand_id) params in
     let body = wrap_begin bodys in
-    Lambda { params; body }
+    Lambda (params, body)
   | n -> Reporter.fatalf Expander_error "bad term %s" ([%show: notation] n)
 
 and wrap_begin (bodys : ENotation.t list) : term =
@@ -118,7 +116,7 @@ let%expect_test "import" =
   test_runner
   @@ fun () ->
   let f = Tapioca_enotation.Parser.test_parse_many "(import rnrs)" in
-  let m = expand_file f in
+  let m = expand_file "test" f in
   (match m.imports with
    | Some s -> List.iter (fun i -> print_endline i) s
    | None -> print_endline "oops");
@@ -129,7 +127,7 @@ let%expect_test "import nothing" =
   test_runner
   @@ fun () ->
   let f = Tapioca_enotation.Parser.test_parse_many "(import )" in
-  let m = expand_file f in
+  let m = expand_file "test" f in
   (match m.imports with
    | Some s -> List.iter (fun i -> print_endline i) s
    | None -> print_endline "oops");
