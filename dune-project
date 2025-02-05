@@ -30,7 +30,8 @@
   eio
   eio_main
   asai
-  algaeff)
+  algaeff
+  bwd)
  (tags
   ("add topics" "to describe" your project)))
 

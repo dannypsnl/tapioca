@@ -7,4 +7,5 @@
  (libraries
   asai
   algaeff
+  bwd
   tapioca.enotation))

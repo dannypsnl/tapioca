@@ -1,8 +1,8 @@
-(: x : i32)
+(: x : int)
 (define x 1)
 
 (: y : int)
-(define y 1)
+(define y 2)
 
 (: f : int int -> int)
 (define (f a b)

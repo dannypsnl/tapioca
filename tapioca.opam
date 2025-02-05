@@ -21,6 +21,7 @@ depends: [
   "eio_main"
   "asai"
   "algaeff"
+  "bwd"
   "odoc" {with-doc}
 ]
 build: [
