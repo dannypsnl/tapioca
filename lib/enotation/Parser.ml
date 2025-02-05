@@ -1,3 +1,12 @@
+let loc_merge (loc : Asai.Range.t) (loc2 : Asai.Range.t option) : Asai.Range.t =
+  match loc2 with
+  | None -> loc
+  | Some loc2 ->
+    let s, _ = Asai.Range.split loc in
+    let _, e = Asai.Range.split loc2 in
+    Asai.Range.make (s, e)
+;;
+
 let rec enotation () : ENotation.t =
   let open Combinator in
   let open ENotation in
@@ -11,16 +20,19 @@ let rec enotation () : ENotation.t =
   | BOOL_FALSE -> Asai.Range.locate loc @@ Bool false
   | OPEN_VECTOR ->
     let notations = Combinator.many enotation () in
+    let loc2 = current_loc () in
     consume Lexer.CLOSE_PAREN;
-    Asai.Range.locate loc @@ V notations
+    Asai.Range.locate (loc_merge loc loc2) @@ V notations
   | OPEN_PAREN ->
     let notations = Combinator.many enotation () in
+    let loc2 = current_loc () in
     consume Lexer.CLOSE_PAREN;
-    Asai.Range.locate loc @@ L notations
+    Asai.Range.locate (loc_merge loc loc2) @@ L notations
   | OPEN_BRACKET ->
     let notations = Combinator.many enotation () in
+    let loc2 = current_loc () in
     consume Lexer.CLOSE_BRACKET;
-    Asai.Range.locate loc @@ L notations
+    Asai.Range.locate (loc_merge loc loc2) @@ L notations
   | NOTATION_COMMENT ->
     (* a #; comment will ignore next enotation, and take the next next enotaion *)
     let _ = enotation () in
