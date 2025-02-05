@@ -1,13 +1,13 @@
 open Ast
 
-type env =
+type context =
   { bindings : (string, Ast.typ) Hashtbl.t
-  ; parent : env option
+  ; parent : context option
   }
 
-let create (parent : env option) : env = { bindings = Hashtbl.create 100; parent }
+let create (parent : context option) : context = { bindings = Hashtbl.create 100; parent }
 
-let insert (e : env) (id : string) (ty : Ast.typ) : unit =
+let insert (e : context) (id : string) (ty : Ast.typ) : unit =
   match Hashtbl.find_opt e.bindings id with
   | Some v ->
     Reporter.fatalf
