@@ -62,14 +62,19 @@ and expand_term : ENotation.notation -> term = function
   | Rational (p, q) -> Rational (p, q)
   | Bool b -> Bool b
   | Id x -> Identifier x
-  | L ({ value = Id "let"; _ } :: _bindings :: bodys) ->
+  | L ({ value = Id "let"; _ } :: { value = L bindings; _ } :: bodys) ->
+    let bindings = List.map (with_loc expand_binding) bindings in
     let body = wrap_begin bodys in
-    Let ([], body)
+    Let (bindings, body)
   | L ({ value = Id "lambda"; _ } :: { value = L params; _ } :: bodys) ->
     let params = List.map (with_loc expand_id) params in
     let body = wrap_begin bodys in
     Lambda (params, body)
   | n -> Reporter.fatalf Expander_error "bad term %s" ([%show: notation] n)
+
+and expand_binding : ENotation.notation -> string * term = function
+  | L [ { value = Id name; _ }; expr ] -> name, (with_loc expand_term) expr
+  | _ -> Reporter.fatalf Expander_error "bad binding"
 
 and wrap_begin (bodys : ENotation.t list) : term =
   let bodys : term list =

@@ -47,6 +47,6 @@ let produce ~mode root (m : Expander.tapi_module) : unit =
          Write.string w "  ";
          Write.printf w "(define %s %s)\n" name ([%show: term] t))
       m.tops;
-    Write.string w ")"
+    Write.string w ")\n"
   | Program -> ()
 ;;
