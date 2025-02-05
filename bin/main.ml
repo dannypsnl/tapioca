@@ -11,7 +11,6 @@ let compile ~env (filename : string) : unit =
   let ns = Parser.parse_file filename in
   let m = Expander.expand_file filename ns in
   (* TODO: check type of m *)
-  (* TODO: dump m to chez *)
   Chez.produce ~mode:Library root m
 ;;
 
