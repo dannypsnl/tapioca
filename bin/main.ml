@@ -5,13 +5,15 @@ module Tty = Asai.Tty.Make (Tapioca_expander.Reporter.Message)
 
 let version = "0.1.0"
 
-let compile ~env (filename : string) : unit =
+let compile ~env (is_program_mode : bool) (filename : string) : unit =
   let root = Eio.Stdenv.cwd env in
   (* let path = root / filename in *)
   let ns = Parser.parse_file filename in
   let m = Expander.expand_file filename ns in
   (* TODO: check type of m *)
-  Chez.produce ~mode:Library root m
+  if is_program_mode
+  then Chez.produce ~mode:Program root m
+  else Chez.produce ~mode:Library root m
 ;;
 
 let compile_cmd ~env =
@@ -20,10 +22,14 @@ let compile_cmd ~env =
     let doc = "The program file to compile." in
     Arg.required @@ Arg.pos 0 (Arg.some Arg.file) None @@ Arg.info [] ~docv:"PROG" ~doc
   in
+  let is_program_mode =
+    let doc = "" in
+    Arg.value @@ Arg.flag @@ Arg.info [ "program" ] ~doc
+  in
   let doc = "Compile input program file to chez scheme" in
   let man = [ `S Manpage.s_description; `P "" ] in
   let info = Cmd.info "compile" ~version ~doc ~man in
-  Cmd.v info Term.(const (compile ~env) $ arg_file)
+  Cmd.v info Term.(const (compile ~env) $ is_program_mode $ arg_file)
 ;;
 
 let load_cmd ~env =

@@ -48,5 +48,14 @@ let produce ~mode root (m : Expander.tapi_module) : unit =
          Write.printf w "(define %s %s)\n" name ([%show: term] t))
       m.tops;
     Write.string w ")\n"
-  | Program -> ()
+  | Program ->
+    Write.printf w "(import ";
+    (match m.imports with
+     | Some imports -> List.iter (fun i -> Write.printf w "(%s)" (parse_module i)) imports
+     | None -> ());
+    Write.string w ")\n\n";
+    Hashtbl.iter
+      (fun name t -> Write.printf w "(define %s %s)\n" name ([%show: term] t))
+      m.tops;
+    Write.string w "\n"
 ;;
