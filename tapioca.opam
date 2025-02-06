@@ -14,6 +14,7 @@ depends: [
   "dune" {>= "3.17"}
   "ocamlformat"
   "ppxlib"
+  "ppx_expect"
   "ppx_deriving"
   "sedlex"
   "cmdliner"

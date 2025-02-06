@@ -24,6 +24,7 @@
   dune
   ocamlformat
   ppxlib
+  ppx_expect
   ppx_deriving
   sedlex
   cmdliner
