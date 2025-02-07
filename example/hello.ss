@@ -1,7 +1,7 @@
 (import chezscheme)
 
 (: x : int)
-(define x 1)
+(define x 3)
 
 (: y : int)
 (define y 2)
@@ -16,5 +16,5 @@
   (lambda (a b)
     b))
 
-(pretty-print x)
+(pretty-print (+ x y))
 (pretty-print (f x y))

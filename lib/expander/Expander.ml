@@ -2,7 +2,6 @@ open Tapioca_enotation
 open Tapioca_enotation.ENotation
 open Ast
 open Bwd
-open Bwd.Infix
 module Tty = Asai.Tty.Make (Reporter.Message)
 
 exception SecondImport
@@ -14,7 +13,7 @@ type tapi_module =
   ; mutable imports : string list option
   ; context : Context.context
   ; tops : (string, Ast.term) Hashtbl.t
-  ; mutable program : Ast.term bwd
+  ; program : Ast.term Dynarray.t
   }
 
 let create_module (filename : string) : tapi_module =
@@ -22,7 +21,7 @@ let create_module (filename : string) : tapi_module =
   ; imports = None
   ; context = Context.create None
   ; tops = Hashtbl.create 100
-  ; program = Emp
+  ; program = Dynarray.create ()
   }
 ;;
 
@@ -60,7 +59,7 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
     Hashtbl.add !m.tops name term
   | _ ->
     let tm = expand_term n in
-    !m.program <- !m.program <: tm
+    Dynarray.add_last !m.program tm
 
 and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string * term
   = function

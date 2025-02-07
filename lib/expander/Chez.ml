@@ -1,6 +1,5 @@
 open Eio
 open Ast
-open Bwd
 module Write = Eio.Buf_write
 
 let ( / ) = Eio.Path.( / )
@@ -33,6 +32,7 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
   @@ fun w ->
   (match mode with
    | Library ->
+     (* TODO: if m.program is not empty, we should raise an error in Library mode *)
      let module_name = parse_module m.filename in
      Write.printf w "(library (%s)\n" module_name;
      Write.printf w "  (export";
@@ -60,13 +60,11 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
      Hashtbl.iter
        (fun name t -> Write.printf w "(define %s %s)\n" name ([%show: term] t))
        m.tops;
-     let _ =
-       Bwd.map
-         (fun t ->
-            Write.printf w "%s\n" ([%show: term] t);
-            ())
-         m.program
-     in
+     Dynarray.iter
+       (fun t ->
+          Write.printf w "%s\n" ([%show: term] t);
+          ())
+       m.program;
      Write.string w "\n");
   path
 ;;
