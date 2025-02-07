@@ -11,7 +11,7 @@ exception BadForm of ENotation.notation
 type tapi_module =
   { filename : string
   ; mutable imports : string list option
-  ; context : Context.context
+  ; context : Context.t
   ; tops : (string, Ast.term) Hashtbl.t
   ; program : Ast.term Dynarray.t
   }

@@ -9,7 +9,7 @@ let compile ~env (mode : Chez.mode) (filename : string) : 'a Eio.Path.t =
   let root = Eio.Stdenv.cwd env in
   let ns = Parser.parse_file filename in
   let m = Expander.expand_file filename ns in
-  (* TODO: check type of m *)
+  TypeCheck.check_module m;
   Chez.produce ~mode root m
 ;;
 
