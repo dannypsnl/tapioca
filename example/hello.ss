@@ -1,4 +1,4 @@
-(import rnrs)
+(import chezscheme)
 
 (: x : int)
 (define x 1)
@@ -15,3 +15,6 @@
 (define g
   (lambda (a b)
     b))
+
+(pretty-print x)
+(pretty-print (f x y))

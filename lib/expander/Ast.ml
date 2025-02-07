@@ -12,6 +12,10 @@ type term =
   | List of term list
   [@printer
     fun fmt xs -> fprintf fmt "(list %s)" (String.concat " " (List.map show_term xs))]
+  | App of term * term list
+  [@printer
+    fun fmt (fn, args) ->
+      fprintf fmt "(%s %s)" (show_term fn) (String.concat " " (List.map show_term args))]
   | Let of binding list * term
   [@printer
     fun fmt (bs, b) ->

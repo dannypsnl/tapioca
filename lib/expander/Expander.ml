@@ -2,6 +2,7 @@ open Tapioca_enotation
 open Tapioca_enotation.ENotation
 open Ast
 open Bwd
+open Bwd.Infix
 module Tty = Asai.Tty.Make (Reporter.Message)
 
 exception SecondImport
@@ -13,14 +14,25 @@ type tapi_module =
   ; mutable imports : string list option
   ; context : Context.context
   ; tops : (string, Ast.term) Hashtbl.t
+  ; mutable program : Ast.term bwd
   }
 
 let create_module (filename : string) : tapi_module =
-  { filename; imports = None; context = Context.create None; tops = Hashtbl.create 100 }
+  { filename
+  ; imports = None
+  ; context = Context.create None
+  ; tops = Hashtbl.create 100
+  ; program = Emp
+  }
 ;;
 
 let with_loc (f : ENotation.notation -> 'a) : ENotation.t -> 'a =
   fun n -> Reporter.with_loc n.loc @@ fun () -> f n.value
+;;
+
+let known_primitive : string -> bool = function
+  | "pretty-print" -> true
+  | _ -> false
 ;;
 
 let rec expand_file (filename : string) (ns : ENotation.t list) : tapi_module =
@@ -46,7 +58,9 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
   | L ({ value = Id "define"; _ } :: funcform :: bodys) ->
     let name, term = (with_loc (expand_func_form bodys)) funcform in
     Hashtbl.add !m.tops name term
-  | _ -> Reporter.fatalf Expander_error "bad form %s" ([%show: notation] n)
+  | _ ->
+    let tm = expand_term n in
+    !m.program <- !m.program <: tm
 
 and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string * term
   = function
@@ -70,7 +84,24 @@ and expand_term : ENotation.notation -> term = function
     let params = List.map (with_loc expand_id) params in
     let body = wrap_begin bodys in
     Lambda (params, body)
-  | n -> Reporter.fatalf Expander_error "bad term %s" ([%show: notation] n)
+  | L ({ value = Id primitive; _ } :: args) when known_primitive primitive ->
+    let args : term list =
+      List.map
+        (fun (t : ENotation.t) ->
+           (WithLoc { loc = t.loc; value = expand_term t.value } : term))
+        args
+    in
+    App (Identifier primitive, args)
+  | L (fn :: args) ->
+    let fn = (with_loc expand_term) fn in
+    let args : term list =
+      List.map
+        (fun (t : ENotation.t) ->
+           (WithLoc { loc = t.loc; value = expand_term t.value } : term))
+        args
+    in
+    App (fn, args)
+  | n -> Reporter.fatalf Expander_error "bad form %s" ([%show: notation] n)
 
 and expand_binding : ENotation.notation -> string * term = function
   | L [ { value = Id name; _ }; expr ] -> name, (with_loc expand_term) expr
