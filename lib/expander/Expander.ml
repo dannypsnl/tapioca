@@ -29,11 +29,6 @@ let with_loc (f : ENotation.notation -> 'a) : ENotation.t -> 'a =
   fun n -> Reporter.with_loc n.loc @@ fun () -> f n.value
 ;;
 
-let known_primitive : string -> bool = function
-  | "pretty-print" -> true
-  | _ -> false
-;;
-
 let rec expand_file (filename : string) (ns : ENotation.t list) : tapi_module =
   let m = create_module filename in
   List.iter (with_loc (expand_top (ref m))) ns;
@@ -83,14 +78,6 @@ and expand_term : ENotation.notation -> term = function
     let params = List.map (with_loc expand_id) params in
     let body = wrap_begin bodys in
     Lambda (params, body)
-  | L ({ value = Id primitive; _ } :: args) when known_primitive primitive ->
-    let args : term list =
-      List.map
-        (fun (t : ENotation.t) ->
-           (WithLoc { loc = t.loc; value = expand_term t.value } : term))
-        args
-    in
-    App (Identifier primitive, args)
   | L (fn :: args) ->
     let fn = (with_loc expand_term) fn in
     let args : term list =
