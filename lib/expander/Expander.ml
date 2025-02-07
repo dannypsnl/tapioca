@@ -97,7 +97,13 @@ and expand_top_typ (ts : ENotation.t list) (stack : typ bwd) : typ =
      | _ -> Reporter.fatalf Expander_error "unable to expand out a type")
 
 and expand_typ : ENotation.notation -> typ = function
+  | Id "bool" -> Bool
+  | Id "string" -> String
   | Id "int" -> Int
+  | Id "rational" -> Rational
+  | Id "float" -> Float
+  | L ({ value = Id "list"; _ } :: t) -> List (expand_top_typ t Emp)
+  | L ({ value = Id "vector"; _ } :: t) -> Vector (expand_top_typ t Emp)
   | n -> Reporter.fatalf Expander_error "bad import form %s" ([%show: notation] n)
 
 and expand_id : ENotation.notation -> string = function
