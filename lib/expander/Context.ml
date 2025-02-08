@@ -1,13 +1,13 @@
-open Ast
+open Core
 
 type t =
-  { bindings : (string, Ast.typ) Hashtbl.t
+  { bindings : (string, Core.typ) Hashtbl.t
   ; parent : t option
   }
 
 let create (parent : t option) : t = { bindings = Hashtbl.create 100; parent }
 
-let insert (ctx : t) (id : string) (ty : Ast.typ) : unit =
+let insert (ctx : t) (id : string) (ty : Core.typ) : unit =
   match Hashtbl.find_opt ctx.bindings id with
   | Some v ->
     Reporter.fatalf
@@ -19,7 +19,7 @@ let insert (ctx : t) (id : string) (ty : Ast.typ) : unit =
   | None -> Hashtbl.add ctx.bindings id ty
 ;;
 
-let rec lookup (ctx : t) (id : string) : Ast.typ =
+let rec lookup (ctx : t) (id : string) : Core.typ =
   match ctx.parent with
   | None -> Hashtbl.find ctx.bindings id
   | Some p ->

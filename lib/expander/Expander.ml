@@ -102,10 +102,10 @@ and wrap_begin (bodys : ENotation.t list) : term =
   in
   Begin bodys
 
-and expand_top_typ (ts : ENotation.t list) (stack : typ bwd) : typ =
+and expand_top_typ (ts : ENotation.t list) (stack : Core.typ bwd) : Core.typ =
   match ts with
   | { value = Id "->"; _ } :: ts ->
-    let result_ty : typ = expand_top_typ ts Emp in
+    let result_ty : Core.typ = expand_top_typ ts Emp in
     Func (Bwd.to_list stack, result_ty)
   | { value; _ } :: ts -> expand_top_typ ts @@ Bwd.snoc stack (expand_typ value)
   | [] ->
@@ -113,7 +113,7 @@ and expand_top_typ (ts : ENotation.t list) (stack : typ bwd) : typ =
      | Snoc (Emp, v) -> v
      | _ -> Reporter.fatalf Expander_error "unable to expand out a type")
 
-and expand_typ : ENotation.notation -> typ = function
+and expand_typ : ENotation.notation -> Core.typ = function
   | Id "bool" -> Bool
   | Id "string" -> String
   | Id "int" -> Int
