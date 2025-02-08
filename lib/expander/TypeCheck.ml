@@ -1,9 +1,10 @@
 open Ast
 open Core
+open Asai.Range
 
 let rec check ~loc (ctx : Context.t) (tm : Ast.term) (expected : Core.typ) : unit =
   match tm, expected with
-  | WithLoc { value; loc }, expected -> check ~loc ctx value expected
+  | WithLoc { value; loc }, expected -> check ~loc:(Option.get loc) ctx value expected
   | Lambda (params, body), Func (params_ty, ret_ty) ->
     let ctx = Context.create (Some ctx) in
     List.iter2 (fun p ty -> Context.insert ctx p ty) params params_ty;
@@ -14,13 +15,13 @@ let rec check ~loc (ctx : Context.t) (tm : Ast.term) (expected : Core.typ) : uni
 
 and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
   match tm with
-  | WithLoc { value; loc } -> infer ~loc ctx value
+  | WithLoc { value; loc } -> infer ~loc:(Option.get loc) ctx value
   | Int _ -> Int
   | Rational _ -> Rational
   | Float _ -> Float
   | Bool _ -> Bool
   | String _ -> String
-  | Identifier name -> Context.lookup ctx name
+  | Identifier name -> Context.lookup ~loc ctx name
   | Let (bs, t) ->
     let new_ctx = Context.create (Some ctx) in
     List.iter
@@ -40,9 +41,10 @@ and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
   | Int, Int -> ()
   | Float, Float -> ()
   | Int, Float -> ()
+  | String, String -> ()
   | _, _ ->
     Reporter.fatalf
-      ~loc:(Option.get loc)
+      ~loc
       Type_error
       "expected: %s, got: %s"
       ([%show: typ] expected)
@@ -51,8 +53,9 @@ and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
 
 let check_module (m : Expander.tapi_module) : unit =
   Hashtbl.iter
-    (fun name tm ->
-       let ty = Context.lookup m.context name in
-       check ~loc:None m.context tm ty)
+    (fun name { value = tm; loc } ->
+       let loc = Option.get loc in
+       let ty = Context.lookup ~loc m.context name in
+       check ~loc m.context tm ty)
     m.tops
 ;;

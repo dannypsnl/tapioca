@@ -18,6 +18,7 @@ let rec enotation () : ENotation.t =
   | RATIONAL (p, q) -> Asai.Range.locate loc @@ Rational (p, q)
   | BOOL_TRUE -> Asai.Range.locate loc @@ Bool true
   | BOOL_FALSE -> Asai.Range.locate loc @@ Bool false
+  | STRING s -> Asai.Range.locate loc @@ String s
   | OPEN_VECTOR ->
     let notations = Combinator.many enotation () in
     let loc2 = current_loc () in

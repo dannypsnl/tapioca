@@ -7,7 +7,7 @@ type term =
   [@printer fun fmt (p, q) -> fprintf fmt "%s/%s" (string_of_int p) (string_of_int q)]
   | Float of float [@printer fun fmt v -> fprintf fmt "%s" (string_of_float v)]
   | Bool of bool [@printer fun fmt v -> if v then fprintf fmt "#t" else fprintf fmt "#f"]
-  | String of string [@printer fun fmt v -> fprintf fmt "\"%s\"" v]
+  | String of string [@printer fun fmt v -> fprintf fmt "%s" v]
   | Identifier of string [@printer fun fmt name -> fprintf fmt "%s" name]
   | List of term list
   [@printer

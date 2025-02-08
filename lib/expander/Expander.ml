@@ -12,7 +12,7 @@ type tapi_module =
   { filename : string
   ; mutable imports : string list option
   ; context : Context.t
-  ; tops : (string, Ast.term) Hashtbl.t
+  ; tops : (string, Ast.term Asai.Range.located) Hashtbl.t
   ; program : Ast.term Dynarray.t
   }
 
@@ -46,12 +46,12 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
   | L ({ value = Id "define"; _ } :: { value = Id name; _ } :: [ { loc; value = body } ])
     ->
     let term : term = WithLoc { loc; value = expand_term body } in
-    Hashtbl.add !m.tops name term
+    Hashtbl.add !m.tops name @@ Asai.Range.locate (Option.get loc) term
   | L ({ value = Id "define"; _ } :: { value = Id _; _ } :: _) ->
     Reporter.fatalf Expander_error "expected only one expression here"
   | L ({ value = Id "define"; _ } :: funcform :: bodys) ->
     let name, term = (with_loc (expand_func_form bodys)) funcform in
-    Hashtbl.add !m.tops name term
+    Hashtbl.add !m.tops name @@ Asai.Range.locate (Option.get (Reporter.get_loc ())) term
   | _ ->
     let tm = expand_term n in
     Dynarray.add_last !m.program tm
@@ -66,6 +66,7 @@ and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string *
   | _ -> Reporter.fatalf Expander_error "not a valid function form"
 
 and expand_term : ENotation.notation -> term = function
+  | String s -> String s
   | Int i -> Int i
   | Rational (p, q) -> Rational (p, q)
   | Bool b -> Bool b

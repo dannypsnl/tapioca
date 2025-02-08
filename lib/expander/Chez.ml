@@ -1,5 +1,6 @@
 open Eio
 open Ast
+open Asai.Range
 module Write = Eio.Buf_write
 
 let ( / ) = Eio.Path.( / )
@@ -45,7 +46,7 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
       | None -> ());
      Write.string w ")\n\n";
      Hashtbl.iter
-       (fun name t ->
+       (fun name { value = t; _ } ->
           Write.string w "  ";
           Write.printf w "(define %s %s)\n" name ([%show: term] t))
        m.tops;
@@ -58,7 +59,8 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
       | None -> ());
      Write.string w ")\n\n";
      Hashtbl.iter
-       (fun name t -> Write.printf w "(define %s %s)\n" name ([%show: term] t))
+       (fun name { value = t; _ } ->
+          Write.printf w "(define %s %s)\n" name ([%show: term] t))
        m.tops;
      Dynarray.iter
        (fun t ->

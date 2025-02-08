@@ -6,6 +6,7 @@ type t =
 and notation =
   | Id of string [@printer fun fmt name -> fprintf fmt "%s" name]
   | Bool of bool [@printer fun fmt v -> fprintf fmt "%s" (if v then "#t" else "#f")]
+  | String of string [@printer fun fmt v -> fprintf fmt "\"%s\"" v]
   | Int of int [@printer fun fmt i -> fprintf fmt "%s" (string_of_int i)]
   | Rational of int * int
   [@printer fun fmt (p, q) -> fprintf fmt "%s/%s" (string_of_int p) (string_of_int q)]
