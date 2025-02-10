@@ -53,6 +53,10 @@ and check_args ~loc (ctx : Context.t) (tms : Ast.term list) (tys : Core.typ list
   | tm :: tms, [ Many ty ] ->
     check ~loc ctx tm ty;
     check_args ~loc ctx tms tys
+  | [], Optional _ :: _ -> ()
+  | tm :: tms, Optional ty :: tys ->
+    check ~loc ctx tm ty;
+    check_args ~loc ctx tms tys
   | tm :: tms, ty :: tys ->
     check ~loc ctx tm ty;
     check_args ~loc ctx tms tys
@@ -93,7 +97,7 @@ let load_primitive_types (ctx : Context.t) : unit =
   Context.insert ctx "*" @@ Func ([ Many Int ], Int);
   Context.insert ctx "/" @@ Func ([ Int; Many Int ], Int);
   Context.insert ctx "decode-float" @@ Func ([ Float ], Vector Int);
-  Context.insert ctx "string->number" @@ Func ([ String ], Number);
+  Context.insert ctx "string->number" @@ Func ([ String; Optional Int ], Number);
   Context.insert ctx "string-append-immutable" @@ Func ([ Many String ], Void);
   Context.insert ctx "string-truncate!" @@ Func ([ String; Int ], Void)
 ;;
