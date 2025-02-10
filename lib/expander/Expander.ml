@@ -69,6 +69,7 @@ and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string *
 and expand_term : ENotation.notation -> term = function
   | String s -> String s
   | Int i -> Int i
+  | Float f -> Float f
   | Rational (p, q) -> Rational (p, q)
   | Bool b -> Bool b
   | Id x -> Identifier x
@@ -89,7 +90,7 @@ and expand_term : ENotation.notation -> term = function
         args
     in
     App (fn, args)
-  | n -> Reporter.fatalf Expander_error "bad form %s" ([%show: notation] n)
+  | n -> Reporter.fatalf Expander_error "unknown form %s" ([%show: notation] n)
 
 and expand_binding : ENotation.notation -> string * term = function
   | L [ { value = Id name; _ }; expr ] -> name, (with_loc expand_term) expr

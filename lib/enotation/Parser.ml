@@ -16,6 +16,7 @@ let rec enotation () : ENotation.t =
   | IDENTIFIER s -> Asai.Range.locate loc @@ Id s
   | INTEGER i -> Asai.Range.locate loc @@ Int i
   | RATIONAL (p, q) -> Asai.Range.locate loc @@ Rational (p, q)
+  | FLOAT f -> Asai.Range.locate loc @@ Float f
   | BOOL_TRUE -> Asai.Range.locate loc @@ Bool true
   | BOOL_FALSE -> Asai.Range.locate loc @@ Bool false
   | STRING s -> Asai.Range.locate loc @@ String s

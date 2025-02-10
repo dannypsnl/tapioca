@@ -11,6 +11,7 @@ type token =
   | BOOL_TRUE [@printer fun fmt () -> fprintf fmt "#t"]
   | BOOL_FALSE [@printer fun fmt () -> fprintf fmt "#f"]
   | INTEGER of int [@printer fun fmt i -> fprintf fmt "%s" (string_of_int i)]
+  | FLOAT of float [@printer fun fmt f -> fprintf fmt "%s" (string_of_float f)]
   | STRING of string [@printer fun fmt s -> fprintf fmt "\"%s\"" s]
   | RATIONAL of int * int
   [@printer fun fmt (p, q) -> fprintf fmt "%s/%s" (string_of_int p) (string_of_int q)]
@@ -118,6 +119,9 @@ let rec token buf =
   | '"', stringChunk, '"' ->
     let buff = Utf8.lexeme buf in
     STRING buff
+  | decimal_ascii, '.', decimal_ascii ->
+    let buff = Utf8.lexeme buf in
+    FLOAT (float_of_string buff)
   | decimal_ascii, '/', decimal_ascii ->
     let buff = Utf8.lexeme buf in
     (match String.split_on_char '/' buff with
