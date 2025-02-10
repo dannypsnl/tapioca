@@ -69,6 +69,8 @@ and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
   match actual, expected with
   | Int, Int -> ()
   | Float, Float -> ()
+  | Int, Number -> ()
+  | Float, Number -> ()
   | String, String -> ()
   | _, Any -> ()
   | _, _ ->
@@ -91,6 +93,7 @@ let load_primitive_types (ctx : Context.t) : unit =
   Context.insert ctx "*" @@ Func ([ Many Int ], Int);
   Context.insert ctx "/" @@ Func ([ Int; Many Int ], Int);
   Context.insert ctx "decode-float" @@ Func ([ Float ], Vector Int);
+  Context.insert ctx "string->number" @@ Func ([ String ], Number);
   Context.insert ctx "string-append-immutable" @@ Func ([ Many String ], Void);
   Context.insert ctx "string-truncate!" @@ Func ([ String; Int ], Void)
 ;;

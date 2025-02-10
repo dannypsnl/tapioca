@@ -120,6 +120,7 @@ and expand_typ : ENotation.notation -> Core.typ = function
   | Id "any" -> Any
   | Id "bool" -> Bool
   | Id "string" -> String
+  | Id "number" -> Number
   | Id "int" -> Int
   | Id "rational" -> Rational
   | Id "float" -> Float
