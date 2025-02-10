@@ -10,3 +10,4 @@
 (pretty-print (string-truncate! x 2))
 (pretty-print (string-append-immutable x y))
 (pretty-print (string->number "1.23"))
+(pretty-print (string->number "123" 6))
