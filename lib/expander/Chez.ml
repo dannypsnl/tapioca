@@ -66,7 +66,7 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
           Write.printf w "(define %s %s)\n" name ([%show: term] t))
        m.tops;
      Dynarray.iter
-       (fun t ->
+       (fun { value = t; _ } ->
           Write.printf w "%s\n" ([%show: term] t);
           ())
        m.program;

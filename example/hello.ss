@@ -17,4 +17,6 @@
     b))
 
 (pretty-print (+ x y))
+(pretty-print (- 4 3 2 1))
+(pretty-print (* 2 (+ x y)))
 (pretty-print (f x y))

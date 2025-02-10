@@ -22,6 +22,17 @@ and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
   | Bool _ -> Bool
   | String _ -> String
   | Identifier name -> Context.lookup ~loc ctx name
+  | List tm_lst ->
+    let typs = List.map (infer ~loc ctx) tm_lst in
+    List (List.hd typs)
+  | App (fn, args) ->
+    let fn_ty = infer ~loc ctx fn in
+    (match fn_ty with
+     | Func (param_tys, ret_ty) ->
+       (* TODO: support many type, string ... can match many strings as input *)
+       check_args ~loc ctx args param_tys;
+       ret_ty
+     | _ -> Reporter.fatalf Type_error "%s cannot be applied" ([%show: Core.typ] fn_ty))
   | Let (bs, t) ->
     let new_ctx = Context.create (Some ctx) in
     List.iter
@@ -34,7 +45,26 @@ and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
     let t = List.hd @@ List.rev ts in
     infer ~loc ctx t
   | Lambda _ -> Reporter.fatalf Type_error "cannot infer lambda"
-  | _ -> Reporter.fatalf TODO "TODO %s" ([%show: Ast.term] tm)
+
+and check_args ~loc (ctx : Context.t) (tms : Ast.term list) (tys : Core.typ list) : unit =
+  match tms, tys with
+  (* (many t) will consume many t arguments, and from beginning there has no arguments should be also a fine case *)
+  | [], [ Many _ ] -> ()
+  (* (many t) should only be a valid type at the tail of parameter types *)
+  | tm :: tms, [ Many ty ] ->
+    check ~loc ctx tm ty;
+    check_args ~loc ctx tms tys
+  | tm :: tms, ty :: tys ->
+    check ~loc ctx tm ty;
+    check_args ~loc ctx tms tys
+  | [], [] -> ()
+  | tms, [] ->
+    Reporter.fatalf
+      Type_error
+      "expected no types, but still have arguments %s"
+      (String.concat " " (List.map show_term tms))
+  | [], ty :: _ ->
+    Reporter.fatalf ~loc Type_error "expected: %s, but has no arguments" ([%show: typ] ty)
 
 and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
   match actual, expected with
@@ -42,6 +72,7 @@ and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
   | Float, Float -> ()
   | Int, Float -> ()
   | String, String -> ()
+  | _, Any -> ()
   | _, _ ->
     Reporter.fatalf
       ~loc
@@ -51,11 +82,28 @@ and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
       ([%show: typ] actual)
 ;;
 
+let load_primitive_types (ctx : Context.t) : unit =
+  Context.insert ctx "pretty-print" @@ Func ([ Any ], Void);
+  Context.insert ctx "+" @@ Func ([ Many Int ], Int);
+  Context.insert ctx "-" @@ Func ([ Int; Many Int ], Int);
+  Context.insert ctx "*" @@ Func ([ Many Int ], Int);
+  Context.insert ctx "/" @@ Func ([ Int; Many Int ], Int);
+  Context.insert ctx "string-append-immutable" @@ Func ([ Many String ], Void);
+  Context.insert ctx "string-truncate!" @@ Func ([ String; Int ], Void);
+  ()
+;;
+
 let check_module (m : Expander.tapi_module) : unit =
+  load_primitive_types m.context;
   Hashtbl.iter
     (fun name { value = tm; loc } ->
        let loc = Option.get loc in
        let ty = Context.lookup ~loc m.context name in
        check ~loc m.context tm ty)
-    m.tops
+    m.tops;
+  Dynarray.iter
+    (fun { value = tm; loc } ->
+       let loc = Option.get loc in
+       check ~loc m.context tm Any)
+    m.program
 ;;

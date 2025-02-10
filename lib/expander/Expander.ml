@@ -13,7 +13,7 @@ type tapi_module =
   ; mutable imports : string list option
   ; context : Context.t
   ; tops : (string, Ast.term Asai.Range.located) Hashtbl.t
-  ; program : Ast.term Dynarray.t
+  ; program : Ast.term Asai.Range.located Dynarray.t
   }
 
 let create_module (filename : string) : tapi_module =
@@ -54,7 +54,8 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
     Hashtbl.add !m.tops name @@ Asai.Range.locate (Option.get (Reporter.get_loc ())) term
   | _ ->
     let tm = expand_term n in
-    Dynarray.add_last !m.program tm
+    Dynarray.add_last !m.program
+    @@ Asai.Range.locate (Option.get (Reporter.get_loc ())) tm
 
 and expand_func_form (bodys : ENotation.t list) : ENotation.notation -> string * term
   = function
@@ -115,6 +116,7 @@ and expand_top_typ (ts : ENotation.t list) (stack : Core.typ bwd) : Core.typ =
      | _ -> Reporter.fatalf Expander_error "unable to expand out a type")
 
 and expand_typ : ENotation.notation -> Core.typ = function
+  | Id "any" -> Any
   | Id "bool" -> Bool
   | Id "string" -> String
   | Id "int" -> Int
