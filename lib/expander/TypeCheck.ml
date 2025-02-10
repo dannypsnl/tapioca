@@ -29,7 +29,6 @@ and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
     let fn_ty = infer ~loc ctx fn in
     (match fn_ty with
      | Func (param_tys, ret_ty) ->
-       (* TODO: support many type, string ... can match many strings as input *)
        check_args ~loc ctx args param_tys;
        ret_ty
      | _ -> Reporter.fatalf Type_error "%s cannot be applied" ([%show: Core.typ] fn_ty))
@@ -84,6 +83,10 @@ and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
 
 let load_primitive_types (ctx : Context.t) : unit =
   Context.insert ctx "pretty-print" @@ Func ([ Any ], Void);
+  (* TODO: a more proper type is numeric
+      and if the inputs are int, the output can be int
+      this is a far more complicated thing
+  *)
   Context.insert ctx "+" @@ Func ([ Many Int ], Int);
   Context.insert ctx "-" @@ Func ([ Int; Many Int ], Int);
   Context.insert ctx "*" @@ Func ([ Many Int ], Int);
