@@ -6,7 +6,9 @@ module Write = Eio.Buf_write
 let ( / ) = Eio.Path.( / )
 
 type mode =
+  (* library mode only contains a list of definition, should have no computations *)
   | Library
+  (* program mode contains computations, can be interactive from shell/GUI/... *)
   | Program
 
 let parse_module (filename : string) : string =
@@ -27,6 +29,7 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
   let path = root / m.filename in
   prepare_file path;
   traceln "Saving to %a" Eio.Path.pp path;
+  (* output path of xxx/yyy.ss is _build/xxx/yyy.ss *)
   Eio.Path.with_open_out ~append:false ~create:(`Or_truncate 0o777) path
   @@ fun out ->
   Write.with_flow out
