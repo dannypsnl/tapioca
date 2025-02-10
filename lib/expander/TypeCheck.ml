@@ -89,8 +89,7 @@ let load_primitive_types (ctx : Context.t) : unit =
   Context.insert ctx "*" @@ Func ([ Many Int ], Int);
   Context.insert ctx "/" @@ Func ([ Int; Many Int ], Int);
   Context.insert ctx "string-append-immutable" @@ Func ([ Many String ], Void);
-  Context.insert ctx "string-truncate!" @@ Func ([ String; Int ], Void);
-  ()
+  Context.insert ctx "string-truncate!" @@ Func ([ String; Int ], Void)
 ;;
 
 let check_module (m : Expander.tapi_module) : unit =
