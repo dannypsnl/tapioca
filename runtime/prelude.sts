@@ -1,0 +1,16 @@
+(: pretty-print : any -> void)
+
+#| TODO: a more proper type is numeric
+  and if the inputs are int, the output can be int
+  this is a far more complicated thing
+|#
+(: + : int ... -> int)
+(: - : int int ... -> int)
+(: * : int ... -> int)
+(: / : int int ... -> int)
+
+(: decode-float : float -> (vector int))
+
+(: string->number : string (? int) -> number)
+(: string-append-immutable : string ... -> string)
+(: string-truncate! : string int -> void)

@@ -5,8 +5,6 @@ open Bwd
 module Tty = Asai.Tty.Make (Reporter.Message)
 
 exception SecondImport
-exception BadImport
-exception BadForm of ENotation.notation
 
 type tapi_module =
   { filename : string
@@ -110,6 +108,9 @@ and expand_top_typ (ts : ENotation.t list) (stack : Core.typ bwd) : Core.typ =
   | { value = Id "->"; _ } :: ts ->
     let result_ty : Core.typ = expand_top_typ ts Emp in
     Func (Bwd.to_list stack, result_ty)
+  | { value = t; _ } :: { value = Id "..."; _ } :: ts ->
+    let t = expand_typ t in
+    expand_top_typ ts @@ Bwd.snoc stack (Many t)
   | { value; _ } :: ts -> expand_top_typ ts @@ Bwd.snoc stack (expand_typ value)
   | [] ->
     (match stack with
@@ -118,15 +119,17 @@ and expand_top_typ (ts : ENotation.t list) (stack : Core.typ bwd) : Core.typ =
 
 and expand_typ : ENotation.notation -> Core.typ = function
   | Id "any" -> Any
+  | Id "void" -> Void
   | Id "bool" -> Bool
   | Id "string" -> String
   | Id "number" -> Number
   | Id "int" -> Int
   | Id "rational" -> Rational
   | Id "float" -> Float
+  | L ({ value = Id "?"; _ } :: t) -> Optional (expand_top_typ t Emp)
   | L ({ value = Id "list"; _ } :: t) -> List (expand_top_typ t Emp)
   | L ({ value = Id "vector"; _ } :: t) -> Vector (expand_top_typ t Emp)
-  | n -> Reporter.fatalf Expander_error "bad import form %s" ([%show: notation] n)
+  | n -> Reporter.fatalf Expander_error "bad type %s" ([%show: notation] n)
 
 and expand_id : ENotation.notation -> string = function
   | Id n -> n

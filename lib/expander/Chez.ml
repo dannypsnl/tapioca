@@ -42,7 +42,7 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
      Write.printf w "  (export";
      Hashtbl.iter (fun name _ -> Write.printf w " %s" name) m.tops;
      Write.printf w ")\n";
-     Write.printf w "  (import ";
+     Write.printf w "  (import (chezscheme) (prelude) ";
      (match m.imports with
       | Some imports ->
         List.iter (fun i -> Write.printf w "(%s)" (parse_module i)) imports
@@ -55,7 +55,7 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
        m.tops;
      Write.string w ")\n"
    | Program ->
-     Write.printf w "(import ";
+     Write.printf w "(import (chezscheme) (prelude) ";
      (match m.imports with
       | Some imports ->
         List.iter (fun i -> Write.printf w "(%s)" (parse_module i)) imports

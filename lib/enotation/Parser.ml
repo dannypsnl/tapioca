@@ -14,6 +14,7 @@ let rec enotation () : ENotation.t =
   let loc = Option.get tok.loc in
   match tok.value with
   | IDENTIFIER s -> Asai.Range.locate loc @@ Id s
+  | DOTS -> Asai.Range.locate loc @@ Id "..."
   | INTEGER i -> Asai.Range.locate loc @@ Int i
   | RATIONAL (p, q) -> Asai.Range.locate loc @@ Rational (p, q)
   | FLOAT f -> Asai.Range.locate loc @@ Float f

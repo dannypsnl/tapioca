@@ -1,5 +1,3 @@
-(import chezscheme)
-
 (: x : int)
 (define x 3)
 

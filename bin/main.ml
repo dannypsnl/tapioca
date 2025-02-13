@@ -4,11 +4,21 @@ open Tapioca_expander
 module Tty = Asai.Tty.Make (Tapioca_expander.Reporter.Message)
 
 let version = "0.1.0"
+let prelude_installed_path = Unix.getenv "HOME" ^ "/.tapioca/runtime"
+let libraries = [ prelude_installed_path; "." ]
+
+let load_primitive_types (ctx : Context.t) : unit =
+  let filename = String.concat "/" [ prelude_installed_path; "prelude.sts" ] in
+  let ns = Parser.parse_file filename in
+  let m = Expander.expand_file filename ns in
+  Context.import ctx m.context
+;;
 
 let compile ~env (mode : Chez.mode) (filename : string) : 'a Eio.Path.t =
   let root = Eio.Stdenv.cwd env in
   let ns = Parser.parse_file filename in
   let m = Expander.expand_file filename ns in
+  load_primitive_types m.context;
   TypeCheck.check_module m;
   Chez.produce ~mode root m
 ;;
@@ -53,7 +63,9 @@ let run_cmd ~env =
         let output = compile ~env Program file in
         let proc_mgr = Eio.Stdenv.process_mgr env in
         let path : string = Format.sprintf "%s" @@ Option.get @@ Eio.Path.native output in
-        Eio.Process.run proc_mgr [ "scheme"; "--program"; path ];
+        Eio.Process.run
+          proc_mgr
+          [ "scheme"; "--libdirs"; String.concat ":" libraries; "--program"; path ];
         ())
       $ arg_file)
 ;;

@@ -6,6 +6,7 @@ type token =
   | CLOSE_PAREN [@printer fun fmt () -> fprintf fmt ")"]
   | OPEN_BRACKET [@printer fun fmt () -> fprintf fmt "["]
   | CLOSE_BRACKET [@printer fun fmt () -> fprintf fmt "]"]
+  | DOTS [@printer fun fmt () -> fprintf fmt "..."]
   | NOTATION_COMMENT [@printer fun fmt () -> fprintf fmt "#;"]
   | IDENTIFIER of string [@printer fun fmt name -> fprintf fmt "%s" name]
   | BOOL_TRUE [@printer fun fmt () -> fprintf fmt "#t"]
@@ -80,10 +81,15 @@ let rec skipWhitespace buf =
   | _ -> ()
 ;;
 
-let comment echo buf =
+let comment buf =
   match%sedlex buf with
-  | Star (Compl newline), newline ->
-    if echo then Format.fprintf Format.std_formatter "%s%!" (Utf8.lexeme buf) else ()
+  | Star (Compl newline), newline -> ()
+  | _ -> assert false
+;;
+
+let multiline_comment buf =
+  match%sedlex buf with
+  | Star (Compl (Chars "|#")), "|#" -> ()
   | _ -> assert false
 ;;
 
@@ -96,17 +102,14 @@ let rec token buf =
   skipWhitespace buf;
   match%sedlex buf with
   | eof -> EOF
+  | "#|" ->
+    multiline_comment buf;
+    token buf
   | ";" ->
-    comment true buf;
+    comment buf;
     token buf
   | newline ->
-    comment false buf;
-    token buf
-  | "#|" ->
-    comment true buf;
-    token buf
-  | "|#" ->
-    comment false buf;
+    comment buf;
     token buf
   | "#t" -> BOOL_TRUE
   | "#f" -> BOOL_FALSE
@@ -116,6 +119,7 @@ let rec token buf =
   | ')' -> CLOSE_PAREN
   | '[' -> OPEN_BRACKET
   | ']' -> CLOSE_BRACKET
+  | "..." -> DOTS
   | '"', stringChunk, '"' ->
     let buff = Utf8.lexeme buf in
     STRING buff
@@ -127,19 +131,19 @@ let rec token buf =
     (match String.split_on_char '/' buff with
      | [ p; q ] -> RATIONAL (int_of_string p, int_of_string q)
      | _ ->
-       let pos = fst @@ lexing_positions buf in
-       raise @@ LexError (pos, "rational number form should be p/q"))
+       let loc = Asai.Range.of_lex_range (Sedlexing.lexing_bytes_positions buf) in
+       LexReporter.fatalf Lex_error ~loc "rational number form should be p/q")
   | decimal_ascii ->
     let number = num_value buf in
     INTEGER number
   | '|', Star (Compl '|'), '|' -> IDENTIFIER (Utf8.lexeme buf)
   | idChunk -> IDENTIFIER (Utf8.lexeme buf)
   | _ ->
-    let pos = fst @@ lexing_positions buf in
     let _ = Sedlexing.next buf in
     (* Skip the bad character: pretend it's a token *)
     let tok = Utf8.lexeme buf in
-    raise @@ LexError (pos, "Unexpected character: " ^ tok)
+    let loc = Asai.Range.of_lex_range (Sedlexing.lexing_bytes_positions buf) in
+    LexReporter.fatalf Lex_error ~loc "Unexpected character: %s" tok
 ;;
 
 let lexer buf = Sedlexing.with_tokenizer token buf

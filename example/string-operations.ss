@@ -1,5 +1,3 @@
-(import chezscheme)
-
 (: x : string)
 (define x "abc")
 (: y : string)

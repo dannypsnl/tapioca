@@ -86,24 +86,7 @@ and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
       ([%show: typ] actual)
 ;;
 
-let load_primitive_types (ctx : Context.t) : unit =
-  Context.insert ctx "pretty-print" @@ Func ([ Any ], Void);
-  (* TODO: a more proper type is numeric
-      and if the inputs are int, the output can be int
-      this is a far more complicated thing
-  *)
-  Context.insert ctx "+" @@ Func ([ Many Int ], Int);
-  Context.insert ctx "-" @@ Func ([ Int; Many Int ], Int);
-  Context.insert ctx "*" @@ Func ([ Many Int ], Int);
-  Context.insert ctx "/" @@ Func ([ Int; Many Int ], Int);
-  Context.insert ctx "decode-float" @@ Func ([ Float ], Vector Int);
-  Context.insert ctx "string->number" @@ Func ([ String; Optional Int ], Number);
-  Context.insert ctx "string-append-immutable" @@ Func ([ Many String ], Void);
-  Context.insert ctx "string-truncate!" @@ Func ([ String; Int ], Void)
-;;
-
 let check_module (m : Expander.tapi_module) : unit =
-  load_primitive_types m.context;
   Hashtbl.iter
     (fun name { value = tm; loc } ->
        let loc = Option.get loc in

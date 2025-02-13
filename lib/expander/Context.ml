@@ -27,3 +27,7 @@ let rec lookup ~loc (ctx : t) (id : string) : Core.typ =
      | Some p -> lookup ~loc p id)
   | Some v -> v
 ;;
+
+let import (ctx : t) (another : t) : unit =
+  Hashtbl.iter (fun name ty -> insert ctx name ty) another.bindings
+;;
