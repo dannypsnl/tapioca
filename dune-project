@@ -2,18 +2,20 @@
 
 (name tapioca)
 
+(version 0.1.0)
+
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github dannypsnl/tapioca))
 
-(authors "Author Name <author@example.com>")
+(authors "Lîm Tsú-thuàn <inbox@dannypsnl.me>")
 
-(maintainers "Maintainer Name <maintainer@example.com>")
+(maintainers "Lîm Tsú-thuàn <inbox@dannypsnl.me>")
 
 (license LICENSE)
 
-(documentation https://url/to/documentation)
+(documentation https://github.com/dannypsnl/tapioca)
 
 (package
  (name tapioca)
@@ -34,6 +36,6 @@
   algaeff
   bwd)
  (tags
-  ("add topics" "to describe" your project)))
+  ("tapioca" "scheme")))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html
