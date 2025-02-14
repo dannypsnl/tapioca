@@ -11,13 +11,12 @@
 (define u8+
   (foreign-procedure "u8_plus" (int u8*) unsigned-8))
 
-(define bv1 (make-bytevector 255 1))
-(define (a)
+(define bv1 (make-bytevector 259 1))
+(display
   (u8+ (bytevector-length bv1) bv1))
 
-(define (b)
-  (let loop ([i 0] [out 0])
+; This version is wrong, because don't implement u8 wrapping result
+(let loop ([i 0] [out 0])
   (if (= i (bytevector-length bv1))
-    out
-    (loop (add1 i) (fx+ out (bytevector-u8-ref bv1 i))))
-  ))
+    (display out)
+    (loop (add1 i) (fx+ out (bytevector-u8-ref bv1 i)))))
