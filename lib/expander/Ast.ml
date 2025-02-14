@@ -16,6 +16,11 @@ type term =
   [@printer
     fun fmt (fn, args) ->
       fprintf fmt "(%s %s)" (show_term fn) (String.concat " " (List.map show_term args))]
+  | If of term * term * term
+  (* (if c t e) *)
+  [@printer
+    fun fmt (c, t, e) ->
+      fprintf fmt "(if %s %s %s)" (show_term c) (show_term t) (show_term e)]
   | Let of binding list * term
   [@printer
     fun fmt (bs, b) ->

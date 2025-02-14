@@ -4,6 +4,8 @@
   and if the inputs are int, the output can be int
   this is a far more complicated thing
 |#
+(: abs : number -> number)
+(: < : number number -> bool)
 (: + : int ... -> int)
 (: - : int int ... -> int)
 (: * : int ... -> int)

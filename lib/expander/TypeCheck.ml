@@ -11,7 +11,15 @@ let rec check ~loc (ctx : Context.t) (tm : Ast.term) (expected : Core.typ) : uni
     check ~loc ctx body ret_ty
   | _, _ ->
     let actual = infer ~loc ctx tm in
-    unify ~loc ~actual ~expected
+    if unify actual expected
+    then ()
+    else
+      Reporter.fatalf
+        ~loc
+        Type_error
+        "expected: %s, got: %s"
+        ([%show: typ] expected)
+        ([%show: typ] actual)
 
 and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
   match tm with
@@ -32,6 +40,11 @@ and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
        check_args ~loc ctx args param_tys;
        ret_ty
      | _ -> Reporter.fatalf Type_error "%s cannot be applied" ([%show: Core.typ] fn_ty))
+  | If (c, t, e) ->
+    check ~loc ctx c Bool;
+    let then_ty = infer ~loc ctx t in
+    let else_ty = infer ~loc ctx e in
+    if unify else_ty then_ty then then_ty else Or [ then_ty; else_ty ]
   | Let (bs, t) ->
     let new_ctx = Context.create (Some ctx) in
     List.iter
@@ -69,21 +82,16 @@ and check_args ~loc (ctx : Context.t) (tms : Ast.term list) (tys : Core.typ list
   | [], ty :: _ ->
     Reporter.fatalf ~loc Type_error "expected: %s, but has no arguments" ([%show: typ] ty)
 
-and unify ~loc ~(actual : Core.typ) ~(expected : Core.typ) : unit =
+and unify (actual : Core.typ) (expected : Core.typ) : bool =
   match actual, expected with
-  | Int, Int -> ()
-  | Float, Float -> ()
-  | Int, Number -> ()
-  | Float, Number -> ()
-  | String, String -> ()
-  | _, Any -> ()
-  | _, _ ->
-    Reporter.fatalf
-      ~loc
-      Type_error
-      "expected: %s, got: %s"
-      ([%show: typ] expected)
-      ([%show: typ] actual)
+  | Bool, Bool -> true
+  | Int, Int -> true
+  | Float, Float -> true
+  | Int, Number -> true
+  | Float, Number -> true
+  | String, String -> true
+  | _, Any -> true
+  | _, _ -> false
 ;;
 
 let check_module (m : Expander.tapi_module) : unit =

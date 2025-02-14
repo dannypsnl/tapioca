@@ -71,6 +71,12 @@ and expand_term : ENotation.notation -> term = function
   | Rational (p, q) -> Rational (p, q)
   | Bool b -> Bool b
   | Id x -> Identifier x
+  | L [ { value = Id "if"; _ }; condition; then_term; else_term ] ->
+    If
+      ( (with_loc expand_term) condition
+      , (with_loc expand_term) then_term
+      , (with_loc expand_term) else_term )
+  | L ({ value = Id "if"; _ } :: _) -> Reporter.fatalf Expander_error "bad if form"
   | L ({ value = Id "let"; _ } :: { value = L bindings; _ } :: bodys) ->
     let bindings = List.map (with_loc expand_binding) bindings in
     let body = wrap_begin bodys in

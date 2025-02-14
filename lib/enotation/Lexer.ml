@@ -133,6 +133,9 @@ let rec token buf =
      | _ ->
        let loc = Asai.Range.of_lex_range (Sedlexing.lexing_bytes_positions buf) in
        LexReporter.fatalf Lex_error ~loc "rational number form should be p/q")
+  | '-', decimal_ascii ->
+    let number = num_value buf in
+    INTEGER number
   | decimal_ascii ->
     let number = num_value buf in
     INTEGER number
