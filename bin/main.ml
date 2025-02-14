@@ -19,7 +19,7 @@ let compile ~env (mode : Chez.mode) (filename : string) : 'a Eio.Path.t =
   let ns = Parser.parse_file filename in
   let m = Expander.expand_file filename ns in
   load_primitive_types m.context;
-  TypeCheck.check_module m;
+  Tyck.check_module m;
   Chez.produce ~mode root m
 ;;
 
