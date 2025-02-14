@@ -3,11 +3,21 @@
 (define-record u8
   ([unsigned-8 value]))
 
-(define (u8+ a b)
-  (make-u8
-    (fxmodulo (fx+ (u8-value a) (u8-value b))
-              256)))
+(load-shared-object "./u8.so")
 
-;(display (make-u8 255))
-(display (u8+ (make-u8 255) (make-u8 1)))
+(define int-id
+  (foreign-procedure "id" (int) int))
 
+(define u8+
+  (foreign-procedure "u8_plus" (int u8*) unsigned-8))
+
+(define bv1 (make-bytevector 255 1))
+(define (a)
+  (u8+ (bytevector-length bv1) bv1))
+
+(define (b)
+  (let loop ([i 0] [out 0])
+  (if (= i (bytevector-length bv1))
+    out
+    (loop (add1 i) (fx+ out (bytevector-u8-ref bv1 i))))
+  ))
