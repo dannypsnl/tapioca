@@ -126,13 +126,14 @@ let rec token buf =
   | decimal_ascii, '.', decimal_ascii ->
     let buff = Utf8.lexeme buf in
     FLOAT (float_of_string buff)
-  | decimal_ascii, '/', decimal_ascii ->
+  | decimal_ascii, '/', decimal_ascii -> begin
     let buff = Utf8.lexeme buf in
-    (match String.split_on_char '/' buff with
-     | [ p; q ] -> RATIONAL (int_of_string p, int_of_string q)
-     | _ ->
-       let loc = Asai.Range.of_lex_range (Sedlexing.lexing_bytes_positions buf) in
-       LexReporter.fatalf Lex_error ~loc "rational number form should be p/q")
+    match String.split_on_char '/' buff with
+    | [ p; q ] -> RATIONAL (int_of_string p, int_of_string q)
+    | _ ->
+      let loc = Asai.Range.of_lex_range (Sedlexing.lexing_bytes_positions buf) in
+      LexReporter.fatalf Lex_error ~loc "rational number form should be p/q"
+  end
   | '-', decimal_ascii ->
     let number = num_value buf in
     INTEGER number

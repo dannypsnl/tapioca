@@ -33,13 +33,14 @@ and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
   | List tm_lst ->
     let typs = List.map (infer ~loc ctx) tm_lst in
     List (List.hd typs)
-  | App (fn, args) ->
+  | App (fn, args) -> begin
     let fn_ty = infer ~loc ctx fn in
-    (match fn_ty with
-     | Func (param_tys, ret_ty) ->
-       check_args ~loc ctx args param_tys;
-       ret_ty
-     | _ -> Reporter.fatalf Type_error "%s cannot be applied" ([%show: Core.typ] fn_ty))
+    match fn_ty with
+    | Func (param_tys, ret_ty) ->
+      check_args ~loc ctx args param_tys;
+      ret_ty
+    | _ -> Reporter.fatalf Type_error "%s cannot be applied" ([%show: Core.typ] fn_ty)
+  end
   | If (c, t, e) ->
     check ~loc ctx c Bool;
     let then_ty = infer ~loc ctx t in

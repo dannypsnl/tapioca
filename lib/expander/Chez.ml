@@ -43,10 +43,12 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
      Hashtbl.iter (fun name _ -> Write.printf w " %s" name) m.tops;
      Write.printf w ")\n";
      Write.printf w "  (import (chezscheme) (prelude) ";
-     (match m.imports with
-      | Some imports ->
-        List.iter (fun i -> Write.printf w "(%s)" (parse_module i)) imports
-      | None -> ());
+     begin
+       match m.imports with
+       | Some imports ->
+         List.iter (fun i -> Write.printf w "(%s)" (parse_module i)) imports
+       | None -> ()
+     end;
      Write.string w ")\n\n";
      Hashtbl.iter
        (fun name { value = t; _ } ->
@@ -56,10 +58,12 @@ let produce ~mode root (m : Expander.tapi_module) : 'a Eio.Path.t =
      Write.string w ")\n"
    | Program ->
      Write.printf w "(import (chezscheme) (prelude) ";
-     (match m.imports with
-      | Some imports ->
-        List.iter (fun i -> Write.printf w "(%s)" (parse_module i)) imports
-      | None -> ());
+     begin
+       match m.imports with
+       | Some imports ->
+         List.iter (fun i -> Write.printf w "(%s)" (parse_module i)) imports
+       | None -> ()
+     end;
      Write.string w ")\n\n";
      Hashtbl.iter
        (fun name { value = t; _ } ->

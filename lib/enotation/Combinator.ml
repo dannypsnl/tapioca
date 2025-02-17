@@ -42,9 +42,10 @@ let consume (predict : Lexer.token) : unit =
   let tok = next_token () in
   if tok.value == predict
   then ()
-  else (
+  else begin
     let loc = Option.get tok.loc in
-    raise (TokenMismatched { loc; expected = predict; got = tok.value }))
+    raise (TokenMismatched { loc; expected = predict; got = tok.value })
+  end
 ;;
 
 let catch_parse_error (p : unit -> 'a) : 'a option =

@@ -21,10 +21,11 @@ let insert (ctx : t) (id : string) (ty : Core.typ) : unit =
 
 let rec lookup ~loc (ctx : t) (id : string) : Core.typ =
   match Hashtbl.find_opt ctx.bindings id with
-  | None ->
-    (match ctx.parent with
-     | None -> Reporter.fatalf ~loc Type_error "`%s` has no type" id
-     | Some p -> lookup ~loc p id)
+  | None -> begin
+    match ctx.parent with
+    | None -> Reporter.fatalf ~loc Type_error "`%s` has no type" id
+    | Some p -> lookup ~loc p id
+  end
   | Some v -> v
 ;;
 
