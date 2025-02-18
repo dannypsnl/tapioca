@@ -1,4 +1,5 @@
-(load-shared-object "/Users/dannypsnl/.tapioca/runtime/u8.so")
+(define home-dir (getenv "HOME"))
+(load-shared-object (path-build home-dir ".tapioca/runtime/u8.so"))
 
 (library (prelude)
   (export u8+)
