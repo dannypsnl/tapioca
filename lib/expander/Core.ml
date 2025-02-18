@@ -12,7 +12,9 @@ type typ =
   | Void [@printer fun fmt _ -> fprintf fmt "void"]
   | Any [@printer fun fmt _ -> fprintf fmt "any"]
   | Number [@printer fun fmt _ -> fprintf fmt "number"]
+  | U8 [@printer fun fmt _ -> fprintf fmt "u8"]
   | Int [@printer fun fmt _ -> fprintf fmt "int"]
+  | IntLit of int [@printer fun fmt v -> fprintf fmt "(int@%s)" (string_of_int v)]
   | Rational [@printer fun fmt _ -> fprintf fmt "rational"]
   (* In some language, this is called double type *)
   | Float [@printer fun fmt _ -> fprintf fmt "float"]
