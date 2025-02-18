@@ -11,6 +11,8 @@
 (: * : int ... -> int)
 (: / : int int ... -> int)
 
+(: u8+ : u8 ... -> u8)
+
 (: decode-float : float -> (vector int))
 
 (: string->number : string (? int) -> number)

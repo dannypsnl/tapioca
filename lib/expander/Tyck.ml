@@ -24,7 +24,7 @@ let rec check ~loc (ctx : Context.t) (tm : Ast.term) (expected : Core.typ) : uni
 and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
   match tm with
   | WithLoc { value; loc } -> infer ~loc:(Option.get loc) ctx value
-  | Int _ -> Int
+  | Int v -> IntLit v
   | Rational _ -> Rational
   | Float _ -> Float
   | Bool _ -> Bool
@@ -86,7 +86,12 @@ and check_args ~loc (ctx : Context.t) (tms : Ast.term list) (tys : Core.typ list
 and unify (actual : Core.typ) (expected : Core.typ) : bool =
   match actual, expected with
   | Bool, Bool -> true
+  | U8, Int -> true
   | Int, Int -> true
+  (* no need to check what's in the literal, it's always fine to store it in a big int type *)
+  | IntLit _, Int -> true
+  | U8, U8 -> true
+  | IntLit v, U8 -> v <= 255 && 0 <= v
   | Float, Float -> true
   | Int, Number -> true
   | Float, Number -> true
