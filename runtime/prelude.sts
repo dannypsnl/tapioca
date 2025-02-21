@@ -12,6 +12,9 @@
 (: / : int int ... -> int)
 
 (: u8+ : u8 ... -> u8)
+(: u8- : u8 u8 ... -> u8)
+(: u8* : u8 ... -> u8)
+(: u8/ : u8 u8 ... -> u8)
 
 (: decode-float : float -> (vector int))
 
