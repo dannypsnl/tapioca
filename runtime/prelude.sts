@@ -1,15 +1,11 @@
 (: pretty-print : any -> void)
 
-#| TODO: a more proper type is numeric
-  and if the inputs are int, the output can be int
-  this is a far more complicated thing
-|#
 (: abs : number -> number)
 (: < : number number -> bool)
-(: + : int ... -> int)
-(: - : int int ... -> int)
-(: * : int ... -> int)
-(: / : int int ... -> int)
+(: + : number ... -> number)
+(: - : number number ... -> number)
+(: * : number ... -> number)
+(: / : number number ... -> number)
 
 (: u8+ : u8 ... -> u8)
 (: u8- : u8 u8 ... -> u8)

@@ -86,16 +86,11 @@ and check_args ~loc (ctx : Context.t) (tms : Ast.term list) (tys : Core.typ list
 and unify (actual : Core.typ) (expected : Core.typ) : bool =
   match actual, expected with
   | Bool, Bool -> true
-  | U8, Int -> true
-  | Int, Int -> true
-  (* no need to check what's in the literal, it's always fine to store it in a big int type *)
-  | IntLit _, Int -> true
+  | U8, Int | Int, Int | IntLit _, Int -> true
   | U8, U8 -> true
   | IntLit v, U8 -> v <= 255 && 0 <= v
   | Float, Float -> true
-  | U8, Number -> true
-  | Int, Number -> true
-  | Float, Number -> true
+  | U8, Number | IntLit _, Number | Int, Number | Float, Number | Number, Number -> true
   | String, String -> true
   | _, Any -> true
   | _, _ -> false
