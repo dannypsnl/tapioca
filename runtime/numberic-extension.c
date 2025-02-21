@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <stdio.h>
 
 int id(int x)
 {
