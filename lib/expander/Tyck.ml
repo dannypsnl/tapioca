@@ -92,6 +92,7 @@ and unify (actual : Core.typ) (expected : Core.typ) : bool =
   | Float, Float -> true
   | U8, Number | IntLit _, Number | Int, Number | Float, Number | Number, Number -> true
   | String, String -> true
+  | OutputPort, OutputPort -> true
   | _, Any -> true
   | _, _ -> false
 ;;

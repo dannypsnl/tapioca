@@ -2,9 +2,18 @@
 (load-shared-object (path-build home-dir ".tapioca/runtime/tapioca.so"))
 
 (library (prelude)
-  (export u8+ u8- u8* u8/)
+  (export
+    u8+ u8- u8* u8/
+    writeln)
   (import (chezscheme))
 
+  (define writeln
+    (case-lambda
+      [(x) (write x)
+           (newline)]
+      [(x p)
+       (write x p)
+       (newline p)]))
 
   (define u8_plus (foreign-procedure "u8_plus" (int u8*) unsigned-8))
   (define (u8+ . vs)

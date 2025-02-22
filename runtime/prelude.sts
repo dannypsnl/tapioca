@@ -1,4 +1,5 @@
 (: pretty-print : any -> void)
+(: writeln : any (? output-port) -> void)
 
 (: abs : number -> number)
 (: < : number number -> bool)

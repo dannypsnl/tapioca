@@ -20,4 +20,5 @@ type typ =
   | Float [@printer fun fmt _ -> fprintf fmt "float"]
   | Bool [@printer fun fmt _ -> fprintf fmt "bool"]
   | String [@printer fun fmt _ -> fprintf fmt "string"]
+  | OutputPort [@printer fun fmt _ -> fprintf fmt "output-port"]
 [@@deriving show]

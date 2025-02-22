@@ -133,6 +133,7 @@ and expand_typ : ENotation.notation -> Core.typ = function
   | Id "int" -> Int
   | Id "rational" -> Rational
   | Id "float" -> Float
+  | Id "output-port" -> OutputPort
   | L ({ value = Id "?"; _ } :: t) -> Optional (expand_top_typ t Emp)
   | L ({ value = Id "list"; _ } :: t) -> List (expand_top_typ t Emp)
   | L ({ value = Id "vector"; _ } :: t) -> Vector (expand_top_typ t Emp)
