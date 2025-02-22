@@ -1,5 +1,6 @@
 (: pretty-print : any -> void)
 (: writeln : any (? output-port) -> void)
+(: open-string-output-port : -> (values output-port (-> string)))
 
 (: abs : number -> number)
 (: < : number number -> bool)

@@ -54,6 +54,29 @@ and infer ~loc (ctx : Context.t) (tm : Ast.term) : Core.typ =
          Context.insert new_ctx name ty)
       bs;
     infer ~loc new_ctx t
+  | LetValues (bs, t) ->
+    let new_ctx = Context.create (Some ctx) in
+    List.iter
+      (fun binding ->
+         match binding with
+         | FormalsBinding (names, tm) ->
+           let ty = infer ~loc ctx tm in
+           (match ty with
+            | Values tys ->
+              let _ =
+                List.map2 (fun name ty -> Context.insert new_ctx name ty) names tys
+              in
+              ()
+            | ty ->
+              Reporter.fatalf
+                Type_error
+                "%s didn't match with formals"
+                ([%show: Core.typ] ty))
+         | Binding (name, tm) ->
+           let ty = infer ~loc ctx tm in
+           Context.insert new_ctx name ty)
+      bs;
+    infer ~loc new_ctx t
   | Begin ts ->
     let t = List.hd @@ List.rev ts in
     infer ~loc ctx t

@@ -5,6 +5,7 @@ open Bwd
 module Tty = Asai.Tty.Make (Reporter.Message)
 
 exception SecondImport
+exception ManyType of Core.typ list
 
 type tapi_module =
   { filename : string
@@ -37,10 +38,14 @@ and expand_top (m : tapi_module ref) (n : ENotation.notation) =
   | L ({ value = Id "import"; _ } :: modules) ->
     let modules = List.map (with_loc expand_id) modules in
     if Option.is_some !m.imports then raise SecondImport else !m.imports <- Some modules
-  | L ({ value = Id ":"; _ } :: name :: { value = Id ":"; _ } :: ty) ->
+  | L ({ value = Id ":"; _ } :: name :: { value = Id ":"; _ } :: ty) -> begin
     let name = (with_loc expand_id) name in
-    let ty = expand_top_typ ty Emp in
-    Context.insert !m.context name ty
+    try
+      let ty = expand_top_typ ty Emp in
+      Context.insert !m.context name ty
+    with
+    | ManyType _ -> Reporter.fatalf Expander_error "unable to expand out a type"
+  end
   | L ({ value = Id "define"; _ } :: { value = Id name; _ } :: [ { loc; value = body } ])
     ->
     let term : term = WithLoc { loc; value = expand_term body } in
@@ -81,6 +86,10 @@ and expand_term : ENotation.notation -> term = function
     let bindings = List.map (with_loc expand_binding) bindings in
     let body = wrap_begin bodys in
     Let (bindings, body)
+  | L ({ value = Id "let-values"; _ } :: { value = L bindings; _ } :: bodys) ->
+    let bindings = List.map (with_loc expand_formals_binding) bindings in
+    let body = wrap_begin bodys in
+    LetValues (bindings, body)
   | L ({ value = Id "lambda"; _ } :: { value = L params; _ } :: bodys) ->
     let params = List.map (with_loc expand_id) params in
     let body = wrap_begin bodys in
@@ -98,6 +107,13 @@ and expand_term : ENotation.notation -> term = function
 
 and expand_binding : ENotation.notation -> string * term = function
   | L [ { value = Id name; _ }; expr ] -> name, (with_loc expand_term) expr
+  | _ -> Reporter.fatalf Expander_error "bad binding"
+
+and expand_formals_binding : ENotation.notation -> Ast.formals_binding = function
+  | L [ { value = L ids; _ }; expr ] ->
+    let names = List.map (with_loc expand_id) ids in
+    FormalsBinding (names, (with_loc expand_term) expr)
+  | L [ { value = Id name; _ }; expr ] -> Binding (name, (with_loc expand_term) expr)
   | _ -> Reporter.fatalf Expander_error "bad binding"
 
 and wrap_begin (bodys : ENotation.t list) : term =
@@ -121,7 +137,7 @@ and expand_top_typ (ts : ENotation.t list) (stack : Core.typ bwd) : Core.typ =
   | [] ->
     (match stack with
      | Snoc (Emp, v) -> v
-     | _ -> Reporter.fatalf Expander_error "unable to expand out a type")
+     | _ -> raise @@ ManyType (Bwd.to_list stack))
 
 and expand_typ : ENotation.notation -> Core.typ = function
   | Id "any" -> Any
@@ -137,6 +153,14 @@ and expand_typ : ENotation.notation -> Core.typ = function
   | L ({ value = Id "?"; _ } :: t) -> Optional (expand_top_typ t Emp)
   | L ({ value = Id "list"; _ } :: t) -> List (expand_top_typ t Emp)
   | L ({ value = Id "vector"; _ } :: t) -> Vector (expand_top_typ t Emp)
+  | L ({ value = Id "values"; _ } :: t) -> begin
+    try
+      let ty = expand_top_typ t Emp in
+      Values [ ty ]
+    with
+    | ManyType ts -> Values ts
+  end
+  | L ts -> expand_top_typ ts Emp
   | n -> Reporter.fatalf Expander_error "bad type %s" ([%show: notation] n)
 
 and expand_id : ENotation.notation -> string = function

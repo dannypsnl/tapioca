@@ -5,6 +5,9 @@ type typ =
       fprintf fmt "%s -> %s" (String.concat " " (List.map show_typ ts)) (show_typ t)]
   | Or of typ list
   [@printer fun fmt ts -> fprintf fmt "(⊎ %s)" (String.concat " " (List.map show_typ ts))]
+  | Values of typ list
+  [@printer
+    fun fmt ts -> fprintf fmt "(values %s)" (String.concat " " (List.map show_typ ts))]
   | Many of typ [@printer fun fmt t -> fprintf fmt "%s ..." (show_typ t)]
   | Optional of typ [@printer fun fmt t -> fprintf fmt "(? %s)" (show_typ t)]
   | List of typ [@printer fun fmt t -> fprintf fmt "(list %s)" (show_typ t)]

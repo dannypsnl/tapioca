@@ -29,6 +29,14 @@ type term =
         "(let (%s) %s)"
         (String.concat " " (List.map show_binding bs))
         (show_term b)]
+  | LetValues of formals_binding list * term
+  [@printer
+    fun fmt (bs, b) ->
+      fprintf
+        fmt
+        "(let-values (%s) %s)"
+        (String.concat " " (List.map show_formals_binding bs))
+        (show_term b)]
   | Lambda of string list * term
   [@printer
     fun fmt (params, body) ->
@@ -39,4 +47,11 @@ type term =
 
 and binding =
   (string * term[@printer fun fmt (x, v) -> fprintf fmt "[%s %s]" x (show_term v)])
+
+and formals_binding =
+  | FormalsBinding of string list * term
+  [@printer
+    fun fmt (xs, v) -> fprintf fmt "[(%s) %s]" (String.concat " " xs) (show_term v)]
+  | Binding of string * term
+  [@printer fun fmt (x, v) -> fprintf fmt "[%s %s]" x (show_term v)]
 [@@deriving show]
