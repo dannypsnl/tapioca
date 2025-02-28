@@ -16,6 +16,7 @@ type typ =
   | Any [@printer fun fmt _ -> fprintf fmt "any"]
   | Number [@printer fun fmt _ -> fprintf fmt "number"]
   | U8 [@printer fun fmt _ -> fprintf fmt "u8"]
+  | U16 [@printer fun fmt _ -> fprintf fmt "u16"]
   | Int [@printer fun fmt _ -> fprintf fmt "int"]
   | IntLit of int [@printer fun fmt v -> fprintf fmt "(int@%s)" (string_of_int v)]
   | Rational [@printer fun fmt _ -> fprintf fmt "rational"]

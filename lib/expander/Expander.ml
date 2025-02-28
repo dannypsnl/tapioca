@@ -146,6 +146,7 @@ and expand_typ : ENotation.notation -> Core.typ = function
   | Id "string" -> String
   | Id "number" -> Number
   | Id "u8" -> U8
+  | Id "u16" -> U16
   | Id "int" -> Int
   | Id "rational" -> Rational
   | Id "float" -> Float
